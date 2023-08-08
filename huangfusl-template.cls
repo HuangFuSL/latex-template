@@ -1,4 +1,4 @@
-\ProvideClass{huangfusl-template}
+\ProvidesClass{huangfusl-template}
 \NeedsTeXFormat{LaTeX2e}
 
 \newif\ifarticle
