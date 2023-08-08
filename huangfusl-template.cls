@@ -95,7 +95,6 @@
     % Styles and fonts
     \RequirePackage[T1]{fontenc}
     \RequirePackage{fontspec}
-    \RequirePackage{calligra}
     \RequirePackage{setspace}
     \RequirePackage{soul}
 
@@ -124,6 +123,7 @@
     \ifbeamer
 
     \RequirePackage{pdfcomment} % Beamer only
+    \RequirePackage{calligra} % Used in \mythanks
     % \RequirePackage{tsinghua} % Obsolete
 
     % Template config
