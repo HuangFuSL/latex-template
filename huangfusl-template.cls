@@ -557,7 +557,6 @@
             \par
             \vskip 1.5em
         }
-        \global\let\subtitle\relax
     \fi
 
     % Feat: add `\ssection`, `\ssubsection`, `\ssubsubsection` to hide section number
