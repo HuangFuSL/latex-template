@@ -9,12 +9,30 @@
     \newif\ifpaper
     \newif\ifstandalone
     \newif\ifcn
-    \DeclareOption{article}{\articletrue\papertrue\standalonefalse}
-    \DeclareOption{beamer}{\beamertrue\standalonefalse}
-    \DeclareOption{book}{\booktrue\papertrue\standalonefalse}
-    \DeclareOption{standalone}{\standalonetrue}
-    \DeclareOption{cn}{\cntrue}
-    \DeclareOption{en}{\cnfalse}
+    \DeclareOption{article}{
+        \ClassInfo{huangfusl-template}{Entering article mode}
+        \articletrue\papertrue\standalonefalse
+    }
+    \DeclareOption{beamer}{
+        \ClassInfo{huangfusl-template}{Entering beamer mode}
+        \beamertrue\standalonefalse
+    }
+    \DeclareOption{book}{
+        \ClassInfo{huangfusl-template}{Entering book mode}
+        \booktrue\papertrue\standalonefalse
+    }
+    \DeclareOption{standalone}{
+        \ClassInfo{huangfusl-template}{Entering standalone mode}
+        \standalonetrue
+    }
+    \DeclareOption{cn}{
+        \ClassInfo{huangfusl-template}{Chinese support enabled}
+        \cntrue
+    }
+    \DeclareOption{en}{
+        \ClassInfo{huangfusl-template}{Chinese support disabled}
+        \cnfalse
+    }
 
 % Compatibility control
     % Add new version switches here
