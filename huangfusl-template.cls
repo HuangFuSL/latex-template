@@ -557,4 +557,25 @@
         }
         \global\let\subtitle\relax
     \fi
+
+    % Feat: add `\ssection`, `\ssubsection`, `\ssubsubsection` to hide section number
+    \def\@silent#1{
+        \expandafter\def\csname @@s#1\endcsname[##1]##2{
+            \begingroup
+                \let\@seccntformat\@gobble
+                \csname #1\endcsname[##1]{##2}
+            \endgroup
+        }
+        \expandafter\def\csname @s#1\endcsname##1{
+            \csname @@s#1\endcsname[##1]{##1}
+        }
+        \expandafter\DeclareRobustCommand\csname s#1\endcsname{
+            \@ifnextchar[
+                {\csname @@s#1\endcsname}
+                {\csname @s#1\endcsname}
+        }
+    }
+    \@silent{section}
+    \@silent{subsection}
+    \@silent{subsubsection}
 \fi
