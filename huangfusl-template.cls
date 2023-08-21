@@ -524,4 +524,8 @@
 \fi
 
 \ifenableB
+    % Fix: headheight warning
+    \ifpaper
+        \setlength{\headheight}{15pt}
+    \fi
 \fi
