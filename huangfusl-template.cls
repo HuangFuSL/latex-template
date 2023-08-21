@@ -50,6 +50,7 @@
     }
     \@RegisterVersion<Zero><0.0>\versionZerotrue % Dummy version
     \@RegisterVersion<A><1.0> % Version 1.0.x
+    \@RegisterVersion<B><2.0> % Version 2.0.x
 
     \ProcessOptions\relax
 
@@ -65,6 +66,7 @@
 
     % List versions switches here
     \ifenableA\enableZerotrue\fi % Enable the preceding version
+    \ifenableB\enableAtrue\fi
 
     % Usage
     % Use \ifenableX if the feature is to be included in the future
@@ -519,4 +521,7 @@
 
     % Tikz settings
     \pgfplotsset{compat=1.18}
+\fi
+
+\ifenableB
 \fi
