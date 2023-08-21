@@ -528,4 +528,33 @@
     \ifpaper
         \setlength{\headheight}{15pt}
     \fi
+
+    % Feat: add \subtitle to article class
+    \ifarticle
+        \newcommand{\subtitle}[1]{\def\@subtitle{#1}}
+        \def\@maketitle{
+            \newpage
+            \null
+            \vskip 2em
+            \begin{center}
+            \let \footnote \thanks
+                {\bfseries \LARGE \@title \par}
+                \ifdefined\@subtitle
+                    \vskip 0.5em
+                    {\Large \@subtitle \par}
+                \fi
+                \vskip 1.5em
+                {\large
+                \lineskip .5em
+                \begin{tabular}[t]{c}
+                    \@author
+                \end{tabular}\par}
+                \vskip 1em
+                {\itshape \large \@date}
+            \end{center}
+            \par
+            \vskip 1.5em
+        }
+        \global\let\subtitle\relax
+    \fi
 \fi
