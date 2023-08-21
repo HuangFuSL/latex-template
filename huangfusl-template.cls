@@ -582,4 +582,13 @@
     \@silent{subsubsection}
 
     % Deprecate: saved geometry settings
+
+    % Feat: add a new command, `\articlefront`, to provide title and table of contents
+    \ifarticle
+        \newcommand{\articlefront}{
+            \maketitle
+            \tableofcontents
+            \newpage
+        }
+    \fi
 \fi
