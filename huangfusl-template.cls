@@ -508,8 +508,9 @@
     \providecommand{\dd}{\mathrm d}
 
     % Other math
-    \providecommand{\geq}{\geqslant}
-    \providecommand{\leq}{\leqslant}
+    % Fix: \geq and \leq
+    \renewcommand{\geq}{\geqslant}
+    \renewcommand{\leq}{\leqslant}
     \DeclareMathOperator{\Cov}{Cov}
     \DeclareMathOperator{\doop}{do}
     \DeclareMathOperator{\diag}{diag}
