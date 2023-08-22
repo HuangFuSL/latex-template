@@ -450,4 +450,16 @@
             \newpage
         }
     \fi
+
+    % Feat: add watermark options
+    \RequirePackage{background}
+    \backgroundsetup{color=gray!1.1!white}
+    \newcommand{\watermarkon}{
+        \backgroundsetup{contents=\@author}
+    }
+    \newcommand{\watermarkoff}{\backgroundsetup{contents=\@empty}}
+
+    \watermarkoff
+    \ifarticle \watermarkon \fi
+    \ifbeamer \watermarkon \fi
 \fi
