@@ -459,4 +459,8 @@
     \newcommand{\watermarkoff}{\backgroundsetup{contents=\@empty}}
 
     \ifpaper \watermarkon \else \watermarkoff \fi
+
+    % Feat: add PDF-A support
+    % Currently does not support embedding metadata, which will be left blank
+    \RequirePackage[a-1b, noerr]{pdfx}
 \fi
