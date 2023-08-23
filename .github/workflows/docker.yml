@@ -27,4 +27,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/huangfusl/template:${{ github.ref_name }}
+          tags: |
+            ghcr.io/huangfusl/template:${{ github.ref_name }}
+            ghcr.io/huangfusl/template:latest
