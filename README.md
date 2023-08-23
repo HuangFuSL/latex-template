@@ -1,11 +1,56 @@
 # latex-template
+
 My latex template
+
+## Features
+
+Four modes are provided within the template, specify using document class arguments
+
+* Article mode: `\documentclass[article]{huangfusl-template}`
+* Beamer mode: `\documentclass[beamer]{huangfusl-template}`
+* Book mode: `\documentclass[book]{huangfusl-template}`
+* Standalone mode: `\documentclass[standalone]{huangfusl-template}`
+
+### Common features
+
+* Abbreviation for single letter `\mathbb`, `\mathbf`, `\mathcal`, `\mathrm` and `\boldsymbol`.
+* Abbreviation for some math operators.
+* CJK support provided by `ctex` package, use `cn` argument to enable, `en` to disable.
+* `\ssection`, `\ssubsection` and `\ssubsubsection` to hide section numbering while keeps table of contents entry.
+* Produce PDF-A documents (but metadata is left empty).
+
+### Article mode
+
+* Pre-configured font, spacing, header and footer.
+* `\subtitle` command to set document subtitle.
+* `\articlefront` as shortcut for a title and toc page.
+* `\watermarkon` and `\watermarkoff` to toggle watermark.
+
+### Beamer mode
+
+* Theme pre-configured and locked.
+* Support for [Présentation.app](http://iihm.imag.fr/blanch/software/osx-presentation/)
+
+### Book mode
+
+* Pre-configured font, spacing, header and footer.
+* `\watermarkon` and `\watermarkoff` to toggle watermark.
+
+### Backward compatibility
+
+Use `version=<version>` to specify the template version. Newer version of template is backward-compatible.
+
+```tex
+\documentclass[article, cn, version=2.0]{huangfusl-template}
+```
+
+For changelog, refer to [Releases](https://github.com/HuangFuSL/latex-template/releases)
 
 ## Configuration
 
 ### Use directly
 
-Before compiling any documents, simple add the path containing `huangfusl-template.cls` to `TEXINPUTS` environment variable.
+Before compiling any documents, simply add the path containing `huangfusl-template.cls` to `TEXINPUTS` environment variable.
 
 ```bash
 export TEXINPUTS=/path-to-template//:
