@@ -458,7 +458,5 @@
     }
     \newcommand{\watermarkoff}{\backgroundsetup{contents=\@empty}}
 
-    \watermarkoff
-    \ifarticle \watermarkon \fi
-    \ifbeamer \watermarkon \fi
+    \ifpaper \watermarkon \else \watermarkoff \fi
 \fi
