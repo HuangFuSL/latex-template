@@ -180,7 +180,6 @@
         \begin{beamercolorbox}[colsep=1.5pt]{lower separation line foot}
         \end{beamercolorbox}
     }
-    \makeatother
 
     % Table of contents
     \providecommand{\splitsections}{
