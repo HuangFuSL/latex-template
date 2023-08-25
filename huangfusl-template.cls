@@ -463,4 +463,8 @@
     % Feat: add PDF-A support
     % Currently does not support embedding metadata, which will be left blank
     \RequirePackage[a-1b, noerr]{pdfx}
+
+    % Fix: `\dd` not found
+    \def\dd{\rmd}
+
 \fi
