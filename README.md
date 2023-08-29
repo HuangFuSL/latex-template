@@ -68,45 +68,44 @@ docker create --name data -v /data:/data alpine
 
 The workflow contains the following steps:
 
-1. Clear remote workspace
+1. Clear remote workspace (`<uuid>` is an external argument)
 
     ```bash
     docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        find . -mindepth 1 -delete
+        clean <uuid>
     ```
 
 2. Copy source file to docker container
 
     ```bash
-    docker cp source-dir/. data:/data/document
+    docker cp source-dir/. data:/data/document/<uuid>
     ```
 
 3. Execute `xelatex` in the container (multiple times)
 
     ```bash
     docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        xelatex -synctex=1 -interaction=nonstopmode -output-directory=/data \
-        -file-line-error document-to-compile.tex
+        xelatex <uuid> document-to-compile.tex
     ```
 
 4. (Optional) Execute `bibtex` in the container
 
     ```bash
     docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        bibtex document-to-compile
+        bibtex <uuid> document-to-compile
     ```
 
-5. (Optional) Remove auxiliary files
+5. Copy compiled document back
+
+    ```bash
+    docker cp data:/data/document/<uuid>/output/. source-dir
+    ```
+
+6. (Optional) Remove auxiliary files
 
     ```bash
     docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        find . -not -name *.pdf -mindepth 1 -delete
-    ```
-
-6. Copy compiled document back
-
-    ```bash
-    docker cp data:/data/document/. source-dir
+        clean <uuid>
     ```
 
 ## LaTeX Workshop integration
@@ -142,7 +141,7 @@ To configure LaTeX Workshop to use pre-built docker image, add the following com
     "args": [
         "cp",
         "%DIR%/.",
-        "data:/data/document"
+        "data:/data/document/%DOCFILE%"
     ]
 },
 {
@@ -150,7 +149,7 @@ To configure LaTeX Workshop to use pre-built docker image, add the following com
     "command": "docker",
     "args": [
         "cp",
-        "data:/data/document/.",
+        "data:/data/document/%DOCFILE%/output/.",
         "%DIR%"
     ]
 },
@@ -163,30 +162,8 @@ To configure LaTeX Workshop to use pre-built docker image, add the following com
         "-v",
         "/data/document:/data",
         "ghcr.io/huangfusl/template:latest",
-        "find",
-        ".",
-        "-mindepth",
-        "1",
-        "-delete"
-    ]
-},
-{
-    "name": "CleanRemoteAuxiliary",
-    "command": "docker",
-    "args": [
-        "run",
-        "--rm",
-        "-v",
-        "/data/document:/data",
-        "ghcr.io/huangfusl/template:latest",
-        "find",
-        ".",
-        "-not",
-        "-name",
-        "*.pdf",
-        "-mindepth",
-        "1",
-        "-delete"
+        "clean",
+        "%DOCFILE%"
     ]
 },
 {
@@ -199,11 +176,8 @@ To configure LaTeX Workshop to use pre-built docker image, add the following com
         "/data/document:/data",
         "ghcr.io/huangfusl/template:latest",
         "xelatex",
-        "-synctex=1",
-        "-interaction=nonstopmode",
-        "-output-directory=/data",
-        "-file-line-error",
-        "/data/%DOCFILE_EXT%"
+        "%DOCFILE%",
+        "%DOCFILE_EXT%"
     ]
 },
 {
@@ -216,7 +190,8 @@ To configure LaTeX Workshop to use pre-built docker image, add the following com
         "/data/document:/data",
         "ghcr.io/huangfusl/template:latest",
         "bibtex",
-        "/data/%DOCFILE_EXT%"
+        "%DOCFILE%",
+        "%DOCFILE%"
     ]
 }
 ```
@@ -237,8 +212,8 @@ Compose tools into the following recipes (`latex-workshop.latex.recipes` section
         "CopyDocker",
         "RemoteXeLaTeX",
         "RemoteXeLaTeX",
-        "CleanRemoteAuxiliary",
-        "CopyLocal"
+        "CopyLocal",
+        "CleanRemoteFile"
     ]
 },
 {
