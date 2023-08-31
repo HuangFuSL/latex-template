@@ -7,10 +7,10 @@ RUN sed -i 's/testing/stable/g' /etc/apt/sources.list \
     && apt install ttf-mscorefonts-installer fonts-noto-cjk -y \
     && apt clean
 
-COPY . /template
-RUN chmod +x /template/entrypoint.sh
-ENV TEXINPUTS=/template//:
+COPY . /opt/template
+RUN chmod +x /opt/template/entrypoint.sh
+ENV TEXINPUTS=/opt/template//:
 
 VOLUME [ "/data" ]
 WORKDIR /data
-ENTRYPOINT [ "/template/entrypoint.sh" ]
+ENTRYPOINT [ "/opt/template/entrypoint.sh" ]
