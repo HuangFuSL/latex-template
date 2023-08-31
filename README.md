@@ -56,6 +56,20 @@ Before compiling any documents, simply add the path containing `huangfusl-templa
 export TEXINPUTS=/path-to-template//:
 ```
 
+### Use via makefile
+
+* Copy or link `makefile.latex.template` to `/usr/include`.
+* Edit `export TEXINPUTS = /opt/template//:` line to match the path to `huangfusl-template.cls`
+* Create a `makefile` in the project:
+
+    ```makefile
+    TARGET = <file-to-compile-without-extension>
+
+    include makefile.latex.template
+    ```
+
+* Execute `make default` to compile the document.
+
 ### Use via docker
 
 The docker image contains the template itself, together with a full texlive installation. Using docker, one can achieve compiling `.tex` documents pure remotely on a docker host. It does not require the local machine to have texlive installed. However, as all texlive packages have been installed in the docker image, the size of image is kind of large (~5GB).
@@ -127,6 +141,18 @@ Add `env` option to toolchain in `settings.json`:
     "env": {
         "TEXINPUTS": "<path-to-template>//:"
     }
+}
+```
+
+### Use makefile
+
+First configure `makefile.latex.template`, write a `makefile`. Add the following compile tools in `latex-workshop.latex.tools` section of `settings.json`.
+
+```json
+{
+    "name": "Make",
+    "command": "make",
+    "args": [ "default" ]
 }
 ```
 

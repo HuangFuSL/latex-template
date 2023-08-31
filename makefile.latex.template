@@ -1,0 +1,29 @@
+XELATEX = xelatex
+XELATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
+PDFLATEX = pdflatex
+PDFLATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
+BIBTEX = bibtex
+
+export TEXINPUTS = /opt/template//:
+
+XELATEX:
+	for i in $$(seq 1 $(COMPILE_NUM)); do \
+		$(XELATEX) $(XELATEX_FLAGS) $(TARGET); \
+	done
+
+PDFLATEX:
+	for i in $$(seq 1 $(COMPILE_NUM)); do \
+		$(PDFLATEX) $(XELATEX_FLAGS) $(TARGET); \
+	done
+
+BIBTEX:
+	$(XELATEX) $(XELATEX_FLAGS) $(TARGET)
+	$(BIBTEX) $(TARGET)
+
+CLEAN:
+	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp
+
+COMPILE_NUM = 2
+
+default: XELATEX CLEAN
+all: BIBTEX XELATEX CLEAN
