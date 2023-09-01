@@ -2,28 +2,60 @@ XELATEX = xelatex
 XELATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 PDFLATEX = pdflatex
 PDFLATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
+LUALATEX = lualatex
+LUALATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 BIBTEX = bibtex
 
 export TEXINPUTS = /opt/template//:
 
-XELATEX:
+help:
+	@echo "Usage: make [target]"
+	@echo "Targets:"
+	@echo "  [xe-]default: compile with xelatex"
+	@echo "  [xe-]all: compile with xelatex and bibtex"
+	@echo "  pdf-default: compile with pdflatex"
+	@echo "  pdf-all: compile with pdflatex and bibtex"
+	@echo "  lua-default: compile with lualatex"
+	@echo "  lua-all: compile with lualatex and bibtex"
+	@echo "  clean: clean all temporary files"
+	@echo "  [help]: show this help message"
+
+$(eval COMPILE_NUM ?= 2)
+$(eval TARGET ?= main.tex)
+
+_COMPILE:
 	for i in $$(seq 1 $(COMPILE_NUM)); do \
-		$(XELATEX) $(XELATEX_FLAGS) $(TARGET); \
+		$(COMPILER) $(COMPILER_FLAGS) $(TARGET); \
 	done
 
-PDFLATEX:
-	for i in $$(seq 1 $(COMPILE_NUM)); do \
-		$(PDFLATEX) $(XELATEX_FLAGS) $(TARGET); \
-	done
+_COMPILE_BIB:
+	$(COMPILER) $(COMPILER_FLAGS) $(TARGET);
+	find . -name '*.aux' -exec $(BIBTEX) {} \;
 
-BIBTEX:
-	$(XELATEX) $(XELATEX_FLAGS) $(TARGET)
-	$(BIBTEX) $(TARGET)
+_COMPILE_ALL: _COMPILE_BIB _COMPILE
 
-CLEAN:
+_XELATEX:
+# if COMPILER is not set, set it to XELATEX, otherwise keep it
+	$(eval COMPILER ?= $(XELATEX))
+	$(eval COMPILER_FLAGS ?= $(XELATEX_FLAGS))
+
+_PDFLATEX:
+	$(eval COMPILER ?= $(PDFLATEX))
+	$(eval COMPILER_FLAGS ?= $(PDFLATEX_FLAGS))
+
+_LUALATEX:
+	$(eval COMPILER ?= $(LUALATEX))
+	$(eval COMPILER_FLAGS ?= $(LUALATEX_FLAGS))
+
+_CLEAN:
 	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp
 
-COMPILE_NUM = 2
-
-default: XELATEX CLEAN
-all: BIBTEX XELATEX CLEAN
+default: xe-default
+all: xe-all
+xe-default: _XELATEX _COMPILE _CLEAN
+xe-all: _XELATEX _COMPILE_ALL _CLEAN
+pdf-default: _PDFLATEX _COMPILE _CLEAN
+pdf-all: _PDFLATEX _COMPILE_ALL _CLEAN
+lua-default: _LUALATEX _COMPILE _CLEAN
+lua-all: _LUALATEX _COMPILE_ALL _CLEAN
+clean: _CLEAN
