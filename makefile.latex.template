@@ -55,7 +55,6 @@ endif
 export TEXINPUTS
 
 _PRE_COMPILE:
-	$(eval DOCKER ?= 0)
 ifeq ($(DOCKER),1)
 	$(eval CONTAINER_ID := $(shell \
 		docker --context $(DOCKER_CONTEXT) run --rm -d \
@@ -102,7 +101,7 @@ _LOCAL_CLEAN:
 
 _POST_COMPILE:
 ifeq ($(DOCKER),1)
-	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/output .
+	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/output/. .
 	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID)
 else
 	-if [ $(DOCKER) -eq 0 ]; then \
