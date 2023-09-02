@@ -70,57 +70,17 @@ export TEXINPUTS=/path-to-template//:
 
 * Execute `make default` to compile the document.
 
+Use `make help` to check all the build targets and environment variable options.
+
 ### Use via docker
 
 The docker image contains the template itself, together with a full texlive installation. Using docker, one can achieve compiling `.tex` documents pure remotely on a docker host. It does not require the local machine to have texlive installed. However, as all texlive packages have been installed in the docker image, the size of image is kind of large (~5GB).
 
-First, create a volume container to store document files. The container does not need to be running.
+The workflow has been integrated into `makefile` process. Simply pass `DOCKER=1` environment variable to switch to docker.
 
 ```bash
-docker create --name data -v /data:/data alpine
+make default DOCKER=1
 ```
-
-The workflow contains the following steps:
-
-1. Clear remote workspace (`<uuid>` is an external argument)
-
-    ```bash
-    docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        clean <uuid>
-    ```
-
-2. Copy source file to docker container
-
-    ```bash
-    docker cp source-dir/. data:/data/document/<uuid>
-    ```
-
-3. Execute `xelatex` in the container (multiple times)
-
-    ```bash
-    docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        xelatex <uuid> document-to-compile.tex
-    ```
-
-4. (Optional) Execute `bibtex` in the container
-
-    ```bash
-    docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        bibtex <uuid> document-to-compile
-    ```
-
-5. Copy compiled document back
-
-    ```bash
-    docker cp data:/data/document/<uuid>/output/. source-dir
-    ```
-
-6. (Optional) Remove auxiliary files
-
-    ```bash
-    docker run --rm -v /data/document:/data ghcr.io/huangfusl/template:latest \
-        clean <uuid>
-    ```
 
 ## LaTeX Workshop integration
 
@@ -156,94 +116,4 @@ First configure `makefile.latex.template`, write a `makefile`. Add the following
 }
 ```
 
-### Docker workflow
-
-To configure LaTeX Workshop to use pre-built docker image, add the following compile tools in `latex-workshop.latex.tools` section of `settings.json`.
-
-```json
-{
-    "name": "CopyDocker",
-    "command": "docker",
-    "args": [
-        "cp",
-        "%DIR%/.",
-        "data:/data/document/%DOCFILE%"
-    ]
-},
-{
-    "name": "CopyLocal",
-    "command": "docker",
-    "args": [
-        "cp",
-        "data:/data/document/%DOCFILE%/output/.",
-        "%DIR%"
-    ]
-},
-{
-    "name": "CleanRemoteFile",
-    "command": "docker",
-    "args": [
-        "run",
-        "--rm",
-        "-v",
-        "/data/document:/data",
-        "ghcr.io/huangfusl/template:latest",
-        "clean",
-        "%DOCFILE%"
-    ]
-},
-{
-    "name": "RemoteXeLaTeX",
-    "command": "docker",
-    "args": [
-        "run",
-        "--rm",
-        "-v",
-        "/data/document:/data",
-        "ghcr.io/huangfusl/template:latest",
-        "xelatex",
-        "%DOCFILE%",
-        "%DOCFILE_EXT%"
-    ]
-},
-{
-    "name": "RemoteBibTeX",
-    "command": "docker",
-    "args": [
-        "run",
-        "--rm",
-        "-v",
-        "/data/document:/data",
-        "ghcr.io/huangfusl/template:latest",
-        "bibtex",
-        "%DOCFILE%",
-        "%DOCFILE%"
-    ]
-}
-```
-
-Further customization:
-
-* Add `--context <context>` argument if a non-default context is used.
-* Add `--pull always` to keep image updated.
-* Add `-i` to bind log to output panel (but do not add `-t`)
-
-Compose tools into the following recipes (`latex-workshop.latex.recipes` section of `settings.json`)
-
-```json
-{
-    "name": "Remote Build",
-    "tools": [
-        "CleanRemoteFile",
-        "CopyDocker",
-        "RemoteXeLaTeX",
-        "RemoteXeLaTeX",
-        "CopyLocal",
-        "CleanRemoteFile"
-    ]
-},
-{
-    "name": "Clear Remote",
-    "tools": ["CleanRemoteFile"]
-}
-```
+Add `DOCKER=1` environment variable to use docker, add `DOCKER_CONTEXT` environment variable to switch context

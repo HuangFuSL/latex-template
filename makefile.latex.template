@@ -6,10 +6,8 @@ LUALATEX = lualatex
 LUALATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 BIBTEX = bibtex
 
-export TEXINPUTS = /opt/template//:
-
 help:
-	@echo "Usage: make [target]"
+	@echo "Usage: make [target] [variable=value]"
 	@echo "Targets:"
 	@echo "  [xe-]default: compile with xelatex"
 	@echo "  [xe-]all: compile with xelatex and bibtex"
@@ -19,23 +17,88 @@ help:
 	@echo "  lua-all: compile with lualatex and bibtex"
 	@echo "  clean: clean all temporary files"
 	@echo "  [help]: show this help message"
+	@echo "Variables:"
+	@echo "  COMPILE_NUM: number of times to compile, default 2"
+	@echo "  TARGET: target file, default \"main.tex\""
+	@echo "  TEXINPUTS: texinputs, default \"/opt/template//:\""
+	@echo "  -- !!! Read documentation before using these variables !!! --"
+	@echo "  Notice that in docker mode, TEXINPUTS does not work."
+	@echo "  DOCKER: use docker to compile, default 0"
+	@echo "  DOCKER_CONTEXT: docker context to use, default \"default\""
+	@echo "  DOCKER_TAG: docker image tag to use, default \"latest\""
 
 $(eval COMPILE_NUM ?= 2)
 $(eval TARGET ?= main.tex)
 
+# Use with caution
+$(eval DOCKER ?= 0)
+$(eval DOCKER_CONTEXT ?= default)
+$(eval DOCKER_TAG ?= latest)
+
+ifeq ($(DOCKER),1)
+$(eval TEXINPUTS = /opt/template//:)
+else
+$(eval TEXINPUTS ?= /opt/template//:)
+endif
+export TEXINPUTS
+
+_PRE_COMPILE:
+	$(eval DOCKER ?= 0)
+ifeq ($(DOCKER),1)
+	$(eval CONTAINER_ID := $(shell \
+		docker --context $(DOCKER_CONTEXT) run --rm -d \
+		ghcr.io/huangfusl/template:$(DOCKER_TAG) \
+		sleep infinity \
+	))
+	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
+endif
+
 _COMPILE:
+ifeq ($(DOCKER),1)
+	docker --context $(DOCKER_CONTEXT) \
+		exec -i $(CONTAINER_ID) \
+		make -f /opt/template/makefile.latex.template _COMPILE \
+			DOCKER=2 TARGET="$(TARGET)" COMPILE_NUM="$(COMPILE_NUM)" \
+			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)"
+else
 	for i in $$(seq 1 $(COMPILE_NUM)); do \
 		$(COMPILER) $(COMPILER_FLAGS) $(TARGET); \
 	done
 
+	if [ $(DOCKER) -eq 2 ]; then \
+		mkdir -p output; \
+		cp *.pdf output/; \
+	fi
+endif
+
 _COMPILE_BIB:
+ifeq ($(DOCKER),1)
+	docker --context $(DOCKER_CONTEXT) \
+		exec -i $(CONTAINER_ID) \
+		make -f /opt/template/makefile.latex.template _COMPILE_BIB \
+			DOCKER=2 COMPILER="$(COMPILER)" BIBTEX="$(BIBTEX)" \
+			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)"
+else
 	$(COMPILER) $(COMPILER_FLAGS) $(TARGET);
 	find . -name '*.aux' -exec $(BIBTEX) {} \;
+endif
 
 _COMPILE_ALL: _COMPILE_BIB _COMPILE
 
+_LOCAL_CLEAN:
+	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp
+
+_POST_COMPILE:
+ifeq ($(DOCKER),1)
+	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/output .
+	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID)
+else
+	if [ $(DOCKER) -eq 0 ]; then \
+		$(MAKE) _LOCAL_CLEAN; \
+	fi
+endif
+
 _XELATEX:
-# if COMPILER is not set, set it to XELATEX, otherwise keep it
 	$(eval COMPILER ?= $(XELATEX))
 	$(eval COMPILER_FLAGS ?= $(XELATEX_FLAGS))
 
@@ -47,15 +110,12 @@ _LUALATEX:
 	$(eval COMPILER ?= $(LUALATEX))
 	$(eval COMPILER_FLAGS ?= $(LUALATEX_FLAGS))
 
-_CLEAN:
-	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp
-
 default: xe-default
 all: xe-all
-xe-default: _XELATEX _COMPILE _CLEAN
-xe-all: _XELATEX _COMPILE_ALL _CLEAN
-pdf-default: _PDFLATEX _COMPILE _CLEAN
-pdf-all: _PDFLATEX _COMPILE_ALL _CLEAN
-lua-default: _LUALATEX _COMPILE _CLEAN
-lua-all: _LUALATEX _COMPILE_ALL _CLEAN
-clean: _CLEAN
+xe-default: _PRE_COMPILE _XELATEX _COMPILE _POST_COMPILE
+xe-all: _PRE_COMPILE _XELATEX _COMPILE_ALL _POST_COMPILE
+pdf-default: _PRE_COMPILE _PDFLATEX _COMPILE _POST_COMPILE
+pdf-all: _PRE_COMPILE _PDFLATEX _COMPILE_ALL _POST_COMPILE
+lua-default: _PRE_COMPILE _LUALATEX _COMPILE _POST_COMPILE
+lua-all: _PRE_COMPILE _LUALATEX _COMPILE_ALL _POST_COMPILE
+clean: _POST_COMPILE
