@@ -467,4 +467,19 @@
     % Fix: `\dd` not found
     \def\dd{\rmd}
 
+    % Feat: label and remember an equation
+    % From: https://tex.stackexchange.com/questions/459508/how-can-i-repeat-a-formula-without-copying-it
+    % \remember{label}{equation}
+    % \recall{label}
+
+    \newcommand\remember[2]{
+        \makeatletter
+        \expandafter\gdef\csname @labeled:#1\endcsname{#2}\label{#1}#2
+        \makeatother
+    }
+    \newcommand\recall[1]{
+        \makeatletter
+        \csname @labeled:#1\endcsname\tag{\ref{#1}}
+        \makeatother
+    }
 \fi

@@ -18,6 +18,7 @@ Four modes are provided within the template, specify using document class argume
 * CJK support provided by `ctex` package, use `cn` argument to enable, `en` to disable.
 * `\ssection`, `\ssubsection` and `\ssubsubsection` to hide section numbering while keeps table of contents entry.
 * Produce PDF-A documents (but metadata is left empty).
+* `\remember` and `\recall` to repeat equations.
 
 ### Article mode
 
