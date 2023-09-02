@@ -1,11 +1,14 @@
-XELATEX = xelatex
-XELATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
-PDFLATEX = pdflatex
-PDFLATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
-LUALATEX = lualatex
-LUALATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
-DVISVGM = dvisvgm
-DVISVGM_FLAGS = --no-fonts -p1- -O --output=%f-%1p.svg
+$(eval XELATEX ?= xelatex)
+$(eval XELATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval PDFLATEX ?= pdflatex)
+$(eval PDFLATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval LUALATEX ?= lualatex)
+$(eval LUALATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval DVISVGM ?= dvisvgm)
+$(eval DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg)
+$(eval TEXINPUTS ?= /opt/template//:)
+
+# DO NOT EDIT BELOW THIS LINE
 
 help:
 	@echo "Usage: make [target] [variable=value]"
