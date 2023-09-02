@@ -461,7 +461,7 @@
     \ifpaper \watermarkon \else \watermarkoff \fi
 
     % Feat: add PDF-A support
-    % Currently does not support embedding metadata, which will be left blank
+    % Currently only support title and author metadata
     \RequirePackage[a-1b, noerr]{pdfx}
 
     % Fix: `\dd` not found

@@ -62,6 +62,19 @@ ifeq ($(DOCKER),1)
 		sleep infinity \
 	))
 	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
+	docker --context $(DOCKER_CONTEXT) exec -i $(CONTAINER_ID) \
+		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
+			DOCKER=2 TARGET="$(TARGET)"
+else
+	$(eval TITLE := $(shell \
+		sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $(TARGET).tex \
+	))
+	$(eval AUTHOR := $(shell \
+		sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $(TARGET).tex \
+	))
+	touch $(TARGET).xmpdata
+	echo "\Title{$(TITLE)}" >> $(TARGET).xmpdata
+	echo "\Author{$(AUTHOR)}" >> $(TARGET).xmpdata
 endif
 
 _COMPILE:
@@ -97,7 +110,7 @@ endif
 _COMPILE_ALL: _COMPILE_BIB _COMPILE
 
 _LOCAL_CLEAN:
-	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp
+	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata
 
 _POST_COMPILE:
 ifeq ($(DOCKER),1)

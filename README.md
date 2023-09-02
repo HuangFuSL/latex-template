@@ -17,7 +17,7 @@ Four modes are provided within the template, specify using document class argume
 * Abbreviation for some math operators.
 * CJK support provided by `ctex` package, use `cn` argument to enable, `en` to disable.
 * `\ssection`, `\ssubsection` and `\ssubsubsection` to hide section numbering while keeps table of contents entry.
-* Produce PDF-A documents (but metadata is left empty).
+* Produce PDF-A documents.
 * `\remember` and `\recall` to repeat equations.
 
 ### Article mode
@@ -56,6 +56,8 @@ Before compiling any documents, simply add the path containing `huangfusl-templa
 ```bash
 export TEXINPUTS=/path-to-template//:
 ```
+
+Notice that XMP metadata will NOT be available if you don't use `makefile`. (PDF-A standard will still be met)
 
 ### Use via makefile
 
