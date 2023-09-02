@@ -1,0 +1,2 @@
+# Set makefile.latex.template to makefile format
+makefile.latex.template linguist-language=Makefile
