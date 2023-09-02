@@ -4,12 +4,16 @@ PDFLATEX = pdflatex
 PDFLATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 LUALATEX = lualatex
 LUALATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
+DVISVGM = dvisvgm
+DVISVGM_FLAGS = --no-fonts -p1- -O --output=%f-%1p.svg
 
 help:
 	@echo "Usage: make [target] [variable=value]"
 	@echo "Targets:"
 	@echo "  [xe-]default: compile with xelatex"
 	@echo "  [xe-]all: compile with xelatex and bibtex"
+	@echo "  svg: compile with xelatex and dvisvgm"
+	@echo "  svg-all: compile with xelatex, bibtex and dvisvgm"
 	@echo "  pdf-default: compile with pdflatex"
 	@echo "  pdf-all: compile with pdflatex and bibtex"
 	@echo "  lua-default: compile with lualatex"
@@ -64,7 +68,7 @@ ifeq ($(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
 	docker --context $(DOCKER_CONTEXT) exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
-			DOCKER=2 TARGET="$(TARGET)"
+			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG)
 else
 	$(eval TITLE := $(shell \
 		sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $(TARGET).tex \
@@ -109,6 +113,21 @@ endif
 
 _COMPILE_ALL: _COMPILE_BIB _COMPILE
 
+_SVG:
+ifeq ($(DOCKER),1)
+	docker --context $(DOCKER_CONTEXT) \
+		exec -i $(CONTAINER_ID) \
+		make -f /opt/template/makefile.latex.template _SVG \
+			DOCKER=2 TARGET="$(TARGET)"
+else
+	mkdir -p svg
+	cd svg && $(DVISVGM) ../$(TARGET).xdv $(DVISVGM_FLAGS)
+	rm -f *.xdv
+	if [ $(DOCKER) -eq 2 ]; then \
+		cp -r svg output/; \
+	fi
+endif
+
 _LOCAL_CLEAN:
 	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata
 
@@ -134,8 +153,15 @@ _LUALATEX:
 	$(eval COMPILER = $(LUALATEX))
 	$(eval COMPILER_FLAGS = $(LUALATEX_FLAGS))
 
+_DVISVGM:
+	$(eval COMPILER = $(XELATEX))
+	$(eval COMPILER_FLAGS = $(XELATEX_FLAGS))
+	$(eval COMPILER_FLAGS += -output-driver='xdvipdfmx -E -i dvipdfmx-unsafe.cfg' -no-pdf)
+
 default: _PRE_COMPILE _COMPILE _POST_COMPILE
 all: _PRE_COMPILE _COMPILE_ALL _POST_COMPILE
+svg: _DVISVGM _PRE_COMPILE _COMPILE _SVG _POST_COMPILE
+svg-all: _DVISVGM _PRE_COMPILE _COMPILE_ALL _SVG _POST_COMPILE
 xe-default: _XELATEX default
 xe-all: _XELATEX all
 pdf-default: _PDFLATEX default
