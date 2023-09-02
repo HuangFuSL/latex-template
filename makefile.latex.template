@@ -61,11 +61,11 @@ ifeq ($(DOCKER),1)
 			DOCKER=2 TARGET="$(TARGET)" COMPILE_NUM="$(COMPILE_NUM)" \
 			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)"
 else
-	for i in $$(seq 1 $(COMPILE_NUM)); do \
+	-for i in $$(seq 1 $(COMPILE_NUM)); do \
 		$(COMPILER) $(COMPILER_FLAGS) $(TARGET); \
 	done
 
-	if [ $(DOCKER) -eq 2 ]; then \
+	-if [ $(DOCKER) -eq 2 ]; then \
 		mkdir -p output; \
 		cp *.pdf output/; \
 	fi
@@ -79,8 +79,8 @@ ifeq ($(DOCKER),1)
 			DOCKER=2 COMPILER="$(COMPILER)" BIBTEX="$(BIBTEX)" \
 			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)"
 else
-	$(COMPILER) $(COMPILER_FLAGS) $(TARGET);
-	find . -name '*.aux' -exec $(BIBTEX) {} \;
+	-$(COMPILER) $(COMPILER_FLAGS) $(TARGET);
+	-find . -name '*.aux' -exec $(BIBTEX) {} \;
 endif
 
 _COMPILE_ALL: _COMPILE_BIB _COMPILE
@@ -93,7 +93,7 @@ ifeq ($(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/output .
 	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID)
 else
-	if [ $(DOCKER) -eq 0 ]; then \
+	-if [ $(DOCKER) -eq 0 ]; then \
 		$(MAKE) _LOCAL_CLEAN; \
 	fi
 endif
