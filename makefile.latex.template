@@ -4,7 +4,6 @@ PDFLATEX = pdflatex
 PDFLATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 LUALATEX = lualatex
 LUALATEX_FLAGS = -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
-BIBTEX = bibtex
 
 help:
 	@echo "Usage: make [target] [variable=value]"
@@ -18,10 +17,20 @@ help:
 	@echo "  clean: clean all temporary files"
 	@echo "  [help]: show this help message"
 	@echo "Variables:"
+	@echo "  It's recommended to set these variables in `makefile`"
 	@echo "  COMPILE_NUM: number of times to compile, default 2"
 	@echo "  TARGET: target file, default \"main.tex\""
 	@echo "  TEXINPUTS: texinputs, default \"/opt/template//:\""
+	@echo "  COMPILER: compiler to use, default \"xelatex\""
+	@echo "  COMPILER_FLAGS: compiler flags to use, default is"
+	@echo "    -shell-escape"
+	@echo "    -synctex=1"
+	@echo "    -interaction=nonstopmode"
+	@echo "    -file-line-error"
+	@echo "  BIBTEX: bibtex to use, default \"bibtex\""
+	@echo "    Warning: biber engine is not supported by some packages"
 	@echo "  -- !!! Read documentation before using these variables !!! --"
+	@echo "  Use the following variables in command line"
 	@echo "  Notice that in docker mode, TEXINPUTS does not work."
 	@echo "  DOCKER: use docker to compile, default 0"
 	@echo "  DOCKER_CONTEXT: docker context to use, default \"default\""
@@ -29,6 +38,9 @@ help:
 
 $(eval COMPILE_NUM ?= 2)
 $(eval TARGET ?= main.tex)
+$(eval COMPILER ?= $(XELATEX))
+$(eval COMPILER_FLAGS ?= $(XELATEX_FLAGS))
+$(eval BIBTEX ?= bibtex)
 
 # Use with caution
 $(eval DOCKER ?= 0)
@@ -110,12 +122,12 @@ _LUALATEX:
 	$(eval COMPILER ?= $(LUALATEX))
 	$(eval COMPILER_FLAGS ?= $(LUALATEX_FLAGS))
 
-default: xe-default
-all: xe-all
-xe-default: _PRE_COMPILE _XELATEX _COMPILE _POST_COMPILE
-xe-all: _PRE_COMPILE _XELATEX _COMPILE_ALL _POST_COMPILE
-pdf-default: _PRE_COMPILE _PDFLATEX _COMPILE _POST_COMPILE
-pdf-all: _PRE_COMPILE _PDFLATEX _COMPILE_ALL _POST_COMPILE
-lua-default: _PRE_COMPILE _LUALATEX _COMPILE _POST_COMPILE
-lua-all: _PRE_COMPILE _LUALATEX _COMPILE_ALL _POST_COMPILE
+default: _PRE_COMPILE _COMPILE _POST_COMPILE
+all: _PRE_COMPILE _COMPILE_ALL _POST_COMPILE
+xe-default: _XELATEX default
+xe-all: _XELATEX all
+pdf-default: _PDFLATEX default
+pdf-all: _PDFLATEX all
+lua-default: _LUALATEX default
+lua-all: _LUALATEX all
 clean: _POST_COMPILE
