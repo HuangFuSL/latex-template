@@ -54,6 +54,9 @@ $(eval DOCKER ?= 0)
 $(eval DOCKER_CONTEXT ?= default)
 $(eval DOCKER_TAG ?= latest)
 
+# Constants
+AUXILIARY_FILES = *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata
+
 ifeq ($(DOCKER),1)
 $(eval TEXINPUTS = /opt/template//:)
 else
@@ -129,14 +132,16 @@ else
 	for file in $(TARGET); do \
 		cd svg && $(DVISVGM) ../$$file.xdv $(DVISVGM_FLAGS) && cd ..; \
 	done
-	rm -f *.xdv
+	find . -name '*.xdv' -delete
 	if [ $(DOCKER) -eq 2 ]; then \
 		cp -r svg output/; \
 	fi
 endif
 
 _LOCAL_CLEAN:
-	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata
+	for file in $(AUXILIARY_FILES); do \
+		find . -name "$$file" -delete; \
+	done
 
 _POST_COMPILE:
 ifeq ($(DOCKER),1)
