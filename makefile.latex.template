@@ -73,15 +73,13 @@ ifeq ($(DOCKER),1)
 		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
 			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG)
 else
-	$(eval TITLE := $(shell \
-		sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $(TARGET).tex \
-	))
-	$(eval AUTHOR := $(shell \
-		sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $(TARGET).tex \
-	))
-	touch $(TARGET).xmpdata
-	echo "\Title{$(TITLE)}" >> $(TARGET).xmpdata
-	echo "\Author{$(AUTHOR)}" >> $(TARGET).xmpdata
+	-for file in $(TARGET); do \
+		TITLE=$$(sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $$file.tex); \
+		AUTHOR=$$(sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $$file.tex); \
+		touch $$file.xmpdata; \
+		echo "\Title{$$TITLE}" >> $$file.xmpdata; \
+		echo "\Author{$$AUTHOR}" >> $$file.xmpdata; \
+	done
 endif
 
 _COMPILE:
@@ -92,8 +90,10 @@ ifeq ($(DOCKER),1)
 			DOCKER=2 TARGET="$(TARGET)" COMPILE_NUM="$(COMPILE_NUM)" \
 			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)"
 else
-	-for i in $$(seq 1 $(COMPILE_NUM)); do \
-		$(COMPILER) $(COMPILER_FLAGS) $(TARGET); \
+	-for file in $(TARGET); do \
+		for i in $$(seq 1 $(COMPILE_NUM)); do \
+			$(COMPILER) $(COMPILER_FLAGS) $$file; \
+		done; \
 	done
 
 	-if [ $(DOCKER) -eq 2 ]; then \
@@ -110,7 +110,9 @@ ifeq ($(DOCKER),1)
 			DOCKER=2 COMPILER="$(COMPILER)" BIBTEX="$(BIBTEX)" \
 			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)"
 else
-	-$(COMPILER) $(COMPILER_FLAGS) $(TARGET);
+	-for file in $(TARGET); do \
+		$(COMPILER) $(COMPILER_FLAGS) $$file; \
+	done
 	-find . -name '*.aux' -exec $(BIBTEX) {} \;
 endif
 
@@ -124,7 +126,9 @@ ifeq ($(DOCKER),1)
 			DOCKER=2 TARGET="$(TARGET)"
 else
 	mkdir -p svg
-	cd svg && $(DVISVGM) ../$(TARGET).xdv $(DVISVGM_FLAGS)
+	for file in $(TARGET); do \
+		cd svg && $(DVISVGM) ../$$file.xdv $(DVISVGM_FLAGS) && cd ..; \
+	done
 	rm -f *.xdv
 	if [ $(DOCKER) -eq 2 ]; then \
 		cp -r svg output/; \
