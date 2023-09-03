@@ -10,6 +10,12 @@ $(eval TEXINPUTS ?= /opt/template//:)
 
 # DO NOT EDIT BELOW THIS LINE
 
+$(eval TARGET ?= $(foreach file, $(shell find . -name '*.tex'), $(basename $(file))))
+# If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
+$(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
+	$(shell grep -l '%\W*!TEX\W*root\W*=\W*' $(file).tex | sed 's/\.tex$$//') \
+), $(TARGET)))
+
 help:
 	@echo "Usage: make [target] [variable=value]"
 	@echo "Targets:"
@@ -24,9 +30,9 @@ help:
 	@echo "  clean: clean all temporary files"
 	@echo "  [help]: show this help message"
 	@echo "Variables:"
-	@echo "  It's recommended to set these variables in `makefile`"
+	@echo "  It's recommended to set these variables in \`makefile\`"
 	@echo "  COMPILE_NUM: number of times to compile, default 2"
-	@echo "  TARGET: target file, default \"main.tex\""
+	@echo "  TARGET: target file, default all .tex files"
 	@echo "  TEXINPUTS: texinputs, default \"/opt/template//:\""
 	@echo "  COMPILER: compiler to use, default \"xelatex\""
 	@echo "  COMPILER_FLAGS: compiler flags to use, default is"
@@ -42,9 +48,10 @@ help:
 	@echo "  DOCKER: use docker to compile, default 0"
 	@echo "  DOCKER_CONTEXT: docker context to use, default \"default\""
 	@echo "  DOCKER_TAG: docker image tag to use, default \"latest\""
+	@echo "Detected targets:"
+	@$(foreach file, $(TARGET), echo "  $(file).tex";)
 
 $(eval COMPILE_NUM ?= 2)
-$(eval TARGET ?= main.tex)
 $(eval COMPILER ?= $(XELATEX))
 $(eval COMPILER_FLAGS ?= $(XELATEX_FLAGS))
 $(eval BIBTEX ?= bibtex)
