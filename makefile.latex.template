@@ -10,11 +10,18 @@ $(eval TEXINPUTS ?= /opt/template//:)
 
 # DO NOT EDIT BELOW THIS LINE
 
+ifeq ($(DOCKER),1)
+OLD_MAKEFLAGS := $(MAKEFLAGS)
+MAKEFLAGS := -j 1
+endif
+
+# If not defined TARGET
 $(eval TARGET ?= $(foreach file, $(shell find . -name '*.tex'), $(basename $(file))))
 # If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
 $(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
 	$(shell grep -l '%\W*!TEX\W*root\W*=\W*' $(file).tex | sed 's/\.tex$$//') \
 ), $(TARGET)))
+WORKDIR := $(shell pwd)
 
 help:
 	@echo "Usage: make [target] [variable=value]"
@@ -62,7 +69,7 @@ $(eval DOCKER_CONTEXT ?= default)
 $(eval DOCKER_TAG ?= latest)
 
 # Constants
-AUXILIARY_FILES = *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata
+AUXILIARY_FILES = *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata *.xdv *.mx1
 
 ifeq ($(DOCKER),1)
 $(eval TEXINPUTS = /opt/template//:)
@@ -81,12 +88,13 @@ ifeq ($(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
 	docker --context $(DOCKER_CONTEXT) exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
-			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG)
+			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG) MAKEFLAGS="$(OLD_MAKEFLAGS)"
 else
 	-for file in $(TARGET); do \
+		TARGET_DIR=$$(dirname $$file); \
 		TITLE=$$(sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $$file.tex); \
 		AUTHOR=$$(sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $$file.tex); \
-		touch $$file.xmpdata; \
+		touch $$TARGET_DIR/$$file.xmpdata; \
 		echo "\Title{$$TITLE}" >> $$file.xmpdata; \
 		echo "\Author{$$AUTHOR}" >> $$file.xmpdata; \
 	done
@@ -98,18 +106,22 @@ ifeq ($(DOCKER),1)
 		exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _COMPILE \
 			DOCKER=2 TARGET="$(TARGET)" COMPILE_NUM="$(COMPILE_NUM)" \
-			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)"
+			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)" \
+			MAKEFLAGS="$(OLD_MAKEFLAGS)"
 else
-	-for file in $(TARGET); do \
-		for i in $$(seq 1 $(COMPILE_NUM)); do \
-			$(COMPILER) $(COMPILER_FLAGS) $$file; \
-		done; \
-	done
-
 	-if [ $(DOCKER) -eq 2 ]; then \
-		mkdir -p output; \
-		cp *.pdf output/; \
+		find . -type f -and -name '*.pdf' -delete; \
 	fi
+
+	-for file in $(TARGET); do \
+		TARGET_DIR=$$(dirname $$file); \
+		TARGET_NAME=$$(basename $$file); \
+		cd $$TARGET_DIR; \
+		for i in $$(seq 1 $(COMPILE_NUM)); do \
+			$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
+		done; \
+		cd $(WORKDIR); \
+	done
 endif
 
 _COMPILE_BIB:
@@ -118,45 +130,55 @@ ifeq ($(DOCKER),1)
 		exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _COMPILE_BIB \
 			DOCKER=2 COMPILER="$(COMPILER)" BIBTEX="$(BIBTEX)" \
-			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)"
+			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)" \
+			MAKEFLAGS="$(OLD_MAKEFLAGS)"
 else
 	-for file in $(TARGET); do \
-		$(COMPILER) $(COMPILER_FLAGS) $$file; \
+		TARGET_DIR=$$(dirname $$file); \
+		TARGET_NAME=$$(basename $$file); \
+		cd $$TARGET_DIR; \
+		$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
+		cd $(WORKDIR); \
 	done
 	-find . -name '*.aux' -exec $(BIBTEX) {} \;
 endif
 
-_COMPILE_ALL: _COMPILE_BIB _COMPILE
+_COMPILE_ALL: | _COMPILE_BIB _COMPILE
 
 _SVG:
 ifeq ($(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) \
 		exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _SVG \
-			DOCKER=2 TARGET="$(TARGET)"
+			DOCKER=2 TARGET="$(TARGET)" MAKEFLAGS="$(OLD_MAKEFLAGS)"
 else
-	mkdir -p svg
-	for file in $(TARGET); do \
-		cd svg && $(DVISVGM) ../$$file.xdv $(DVISVGM_FLAGS) && cd ..; \
-	done
-	find . -name '*.xdv' -delete
 	if [ $(DOCKER) -eq 2 ]; then \
-		cp -r svg output/; \
+		find . -type f -and -name '*.svg' -delete; \
 	fi
-endif
-
-_LOCAL_CLEAN:
-	for file in $(AUXILIARY_FILES); do \
-		find . -name "$$file" -delete; \
+	for file in $(TARGET); do \
+		TARGET_DIR=$$(dirname $$file); \
+		TARGET_NAME=$$(basename $$file); \
+		cd $$TARGET_DIR; \
+		$(DVISVGM) $$TARGET_NAME.xdv $(DVISVGM_FLAGS); \
+		cd $(WORKDIR); \
 	done
+endif
 
 _POST_COMPILE:
 ifeq ($(DOCKER),1)
-	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/output/. .
+	docker --context $(DOCKER_CONTEXT) \
+		exec -i $(CONTAINER_ID) \
+		make -f /opt/template/makefile.latex.template _POST_COMPILE \
+			DOCKER=2 MAKEFLAGS="$(OLD_MAKEFLAGS)"
+	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/. .
 	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID)
 else
-	-if [ $(DOCKER) -eq 0 ]; then \
-		$(MAKE) _LOCAL_CLEAN; \
+	-for file in $(AUXILIARY_FILES); do \
+		find . -name "$$file" -delete; \
+	done
+	find . -name '*.tex'
+	-if [ $(DOCKER) -eq 2 ]; then \
+		find . -type f -and -not -name '*.pdf' -and -not -name '*.svg' -delete; \
 	fi
 endif
 
