@@ -199,14 +199,14 @@ _DVISVGM:
 	$(eval COMPILER_FLAGS = $(XELATEX_FLAGS))
 	$(eval COMPILER_FLAGS += -output-driver='xdvipdfmx -E -i dvipdfmx-unsafe.cfg' -no-pdf)
 
-default: _PRE_COMPILE _COMPILE _POST_COMPILE
-all: _PRE_COMPILE _COMPILE_ALL _POST_COMPILE
-svg: _DVISVGM _PRE_COMPILE _COMPILE _SVG _POST_COMPILE
-svg-all: _DVISVGM _PRE_COMPILE _COMPILE_ALL _SVG _POST_COMPILE
-xe-default: _XELATEX default
-xe-all: _XELATEX all
-pdf-default: _PDFLATEX default
-pdf-all: _PDFLATEX all
-lua-default: _LUALATEX default
-lua-all: _LUALATEX all
-clean: _POST_COMPILE
+default: | _PRE_COMPILE _COMPILE _POST_COMPILE
+all: | _PRE_COMPILE _COMPILE_ALL _POST_COMPILE
+svg: | _DVISVGM _PRE_COMPILE _COMPILE _SVG _POST_COMPILE
+svg-all: | _DVISVGM _PRE_COMPILE _COMPILE_ALL _SVG _POST_COMPILE
+xe-default: | _XELATEX default
+xe-all: | _XELATEX all
+pdf-default: | _PDFLATEX default
+pdf-all: | _PDFLATEX all
+lua-default: | _LUALATEX default
+lua-all: | _LUALATEX all
+clean: | _POST_COMPILE
