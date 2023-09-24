@@ -482,4 +482,7 @@
         \csname @labeled:#1\endcsname\tag{\ref{#1}}
         \makeatother
     }
+
+    % Feat: auto load tikz libraries
+    \usetikzlibrary{calc}
 \fi
