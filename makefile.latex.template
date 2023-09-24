@@ -7,6 +7,7 @@ $(eval LUALATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file
 $(eval DVISVGM ?= dvisvgm)
 $(eval DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg)
 $(eval TEXINPUTS ?= /opt/template//:)
+$(eval EXTERNAL_FILES ?=)
 
 # DO NOT EDIT BELOW THIS LINE
 
@@ -86,6 +87,9 @@ ifeq ($(DOCKER),1)
 		sleep infinity \
 	))
 	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
+	for file in $(EXTERNAL_FILES); do \
+		docker --context $(DOCKER_CONTEXT) cp $$file $(CONTAINER_ID):/data; \
+	done
 	docker --context $(DOCKER_CONTEXT) exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
 			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG) MAKEFLAGS="$(OLD_MAKEFLAGS)"
@@ -97,6 +101,11 @@ else
 		touch $$TARGET_DIR/$$file.xmpdata; \
 		echo "\Title{$$TITLE}" >> $$file.xmpdata; \
 		echo "\Author{$$AUTHOR}" >> $$file.xmpdata; \
+	done
+
+	for file in $(EXTERNAL_FILES); do \
+		TARGET_NAME=$$(basename $$file); \
+		ln -sf $$file $$TARGET_NAME; \
 	done
 endif
 
@@ -180,6 +189,10 @@ else
 	-if [ $(DOCKER) -eq 2 ]; then \
 		find . -type f -and -not -name '*.pdf' -and -not -name '*.svg' -delete; \
 	fi
+	-for file in $(EXTERNAL_FILES); do \
+		TARGET_NAME=$$(basename $$file); \
+		unlink $$TARGET_NAME; \
+	done
 endif
 
 _XELATEX:
