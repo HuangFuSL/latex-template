@@ -25,6 +25,9 @@ $(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
 WORKDIR := $(shell pwd)
 
 help:
+	$(MAKE) _HELP | less
+
+_HELP:
 	@echo "Usage: make [target] [variable=value]"
 	@echo "Targets:"
 	@echo "  [xe-]default: compile with xelatex"
@@ -50,6 +53,14 @@ help:
 	@echo "    -file-line-error"
 	@echo "  BIBTEX: bibtex to use, default \"bibtex\""
 	@echo "    Warning: biber engine is not supported by some packages"
+	@echo "  DVISVGM: dvisvgm to use, default \"dvisvgm\""
+	@echo "  DVISVGM_FLAGS: dvisvgm flags to use, default is"
+	@echo "    --no-fonts"
+	@echo "    -p1-"
+	@echo "    -O"
+	@echo "    --output=%f-%1p.svg"
+	@echo "  EXTERNAL_FILES: external files used in compilation"
+	@echo "    The files will be copied to the working directory"
 	@echo "  -- !!! Read documentation before using these variables !!! --"
 	@echo "  Use the following variables in command line"
 	@echo "  Notice that in docker mode, TEXINPUTS does not work."
@@ -58,6 +69,8 @@ help:
 	@echo "  DOCKER_TAG: docker image tag to use, default \"latest\""
 	@echo "Detected targets:"
 	@$(foreach file, $(TARGET), echo "  $(file).tex";)
+	@echo "External files:"
+	@$(foreach file, $(EXTERNAL_FILES), echo "  $(file) -> ./$(shell basename $(file))";)
 
 $(eval COMPILE_NUM ?= 2)
 $(eval COMPILER ?= $(XELATEX))
