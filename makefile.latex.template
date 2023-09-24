@@ -16,10 +16,10 @@ MAKEFLAGS := -j 1
 endif
 
 # If not defined TARGET
-$(eval TARGET ?= $(foreach file, $(shell find . -name '*.tex'), $(basename $(file))))
+$(eval TARGET ?= $(shell find . -name '*.tex' -and -type f | sed 's/\.tex$$//'))
 # If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
 $(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
-	$(shell grep -l '%\W*!TEX\W*root\W*=\W*' $(file).tex | sed 's/\.tex$$//') \
+	$(shell grep -l '%\W*!\W*TEX\W*root\W*=\W*' $(file).tex | sed 's/\.tex$$//') \
 ), $(TARGET)))
 WORKDIR := $(shell pwd)
 
