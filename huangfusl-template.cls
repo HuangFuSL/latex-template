@@ -485,4 +485,75 @@
 
     % Feat: auto load tikz libraries
     \usetikzlibrary{calc}
+
+    % Feat: add more colors and color streams
+    \colorlet{darkcyan}{cyan!60!black}
+    \colorlet{darkgray}{black!60!white}
+    \colorlet{darkmagenta}{magenta!60!black}
+    \colorlet{darkorange}{orange!60!black}
+    \colorlet{darkyellow}{yellow!60!black}
+    \colorlet{lightcyan}{cyan!30!white}
+    \colorlet{lightgray}{black!30!white}
+    \colorlet{lightmagenta}{magenta!30!white}
+    \colorlet{lightorange}{orange!30!white}
+    \colorlet{lightyellow}{yellow!30!white}
+    \colorlet{darkpurple}{purple!60!black}
+    \colorlet{lightpurple}{purple!30!white}
+    \colorlet{darkbrown}{brown!60!black}
+    \colorlet{lightbrown}{brown!30!white}
+
+    % Feat: add tcolorbox package to article mode and book mode
+    \ifpaper
+        \RequirePackage{tcolorbox}
+        \tcbuselibrary{breakable}
+        \ifarticle
+            \def\@numberwithin{section}
+        \else
+            \def\@numberwithin{chapter}
+        \fi
+        \ifcn
+            \def\@thecontinued{（续）}
+        \else
+            \def\@thecontinued{(continued)}
+        \fi
+        \def\@newboxenv#1#2#3{
+            \newtcolorbox[auto counter,number within=\@numberwithin]{#1}[2][]{
+                breakable,
+                colback=#2!8!white, colframe=#2!90!white, coltitle=white,
+                fonttitle=\bfseries,
+                adjusted title={#3~\thetcbcounter: ##2},
+                adjusted title after break={#3~\thetcbcounter: ##2 \@thecontinued},
+                ##1
+            }
+            \newtcolorbox{#1*}[2][]{
+                breakable,
+                colback=#2!8!white, colframe=#2!90!white, coltitle=white,
+                fonttitle=\bfseries,
+                adjusted title={#3: ##2},
+                adjusted title after break={#3~\thetcbcounter: ##2 \@thecontinued},
+                ##1
+            }
+            \newtcolorbox{#1**}[1][]{
+                breakable,
+                colback=#2!8!white, colframe=#2!90!white, coltitle=white,
+                fonttitle=\bfseries,
+                adjusted title={},
+                adjusted title after break={#3~\thetcbcounter: ##2 \@thecontinued},
+                ##1
+            }
+        }
+        \ifcn
+            \@newboxenv{ctheorem}{darkblue}{定理}
+            \@newboxenv{clemma}{darkgreen}{引理}
+            \@newboxenv{cdefinition}{darkcyan}{定义}
+            \@newboxenv{cexample}{darkmagenta}{例}
+            \@newboxenv{cnotice}{darkred}{注意}
+        \else
+            \@newboxenv{ctheorem}{darkblue}{Theorem}
+            \@newboxenv{clemma}{darkgreen}{Definition}
+            \@newboxenv{cdefinition}{darkcyan}{Definition}
+            \@newboxenv{cexample}{darkmagenta}{Example}
+            \@newboxenv{cnotice}{darkred}{Notice}
+        \fi
+    \fi
 \fi
