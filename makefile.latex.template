@@ -25,7 +25,7 @@ $(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
 WORKDIR := $(shell pwd)
 
 help:
-	$(MAKE) _HELP | less
+	@$(MAKE) _HELP | less
 
 _HELP:
 	@echo "Usage: make [target] [variable=value]"
