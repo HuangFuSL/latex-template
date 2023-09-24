@@ -538,7 +538,7 @@
                 colback=#2!8!white, colframe=#2!90!white, coltitle=white,
                 fonttitle=\bfseries,
                 adjusted title={},
-                adjusted title after break={#3~\thetcbcounter: ##2 \@thecontinued},
+                adjusted title after break={},
                 ##1
             }
         }
