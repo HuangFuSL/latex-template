@@ -1,9 +1,9 @@
 $(eval XELATEX ?= xelatex)
-$(eval XELATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval XELATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
 $(eval PDFLATEX ?= pdflatex)
-$(eval PDFLATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval PDFLATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
 $(eval LUALATEX ?= lualatex)
-$(eval LUALATEX_FLAGS ?= -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error)
+$(eval LUALATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
 $(eval DVISVGM ?= dvisvgm)
 $(eval DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg)
 $(eval TEXINPUTS ?= /opt/template//:)
@@ -11,9 +11,21 @@ $(eval EXTERNAL_FILES ?=)
 
 # DO NOT EDIT BELOW THIS LINE
 
+# Detect OS to set `/dev/null` path
+ifeq ($(OS),Windows_NT)
+	WINNT := 1
+	DEV_NULL := NUL
+else
+	WINNT := 0
+	DEV_NULL := /dev/null
+endif
+
 ifeq ($(DOCKER),1)
-OLD_MAKEFLAGS := $(MAKEFLAGS)
-MAKEFLAGS := -j 1
+else
+# Only set synctex if not in docker mode
+	XELATEX_FLAGS += -synctex=1
+	PDFLATEX_FLAGS += -synctex=1
+	LUALATEX_FLAGS += -synctex=1
 endif
 
 # If not defined TARGET
@@ -25,7 +37,11 @@ $(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
 WORKDIR := $(shell pwd)
 
 help:
+ifeq ($(WINNT),1)
+	@$(MAKE) _HELP | more
+else
 	@$(MAKE) _HELP | less
+endif
 
 _HELP:
 	@echo "Usage: make [target] [variable=value]"
@@ -48,9 +64,7 @@ _HELP:
 	@echo "  COMPILER: compiler to use, default \"xelatex\""
 	@echo "  COMPILER_FLAGS: compiler flags to use, default is"
 	@echo "    -shell-escape"
-	@echo "    -synctex=1"
 	@echo "    -interaction=nonstopmode"
-	@echo "    -file-line-error"
 	@echo "  BIBTEX: bibtex to use, default \"bibtex\""
 	@echo "    Warning: biber engine is not supported by some packages"
 	@echo "  DVISVGM: dvisvgm to use, default \"dvisvgm\""
@@ -94,6 +108,7 @@ export TEXINPUTS
 
 _PRE_COMPILE:
 ifeq ($(DOCKER),1)
+	find . -name '*.synctex.gz' -delete
 	$(eval CONTAINER_ID := $(shell \
 		docker --context $(DOCKER_CONTEXT) run --rm -d \
 		ghcr.io/huangfusl/template:$(DOCKER_TAG) \
@@ -139,8 +154,12 @@ else
 		TARGET_DIR=$$(dirname $$file); \
 		TARGET_NAME=$$(basename $$file); \
 		cd $$TARGET_DIR; \
-		for i in $$(seq 1 $(COMPILE_NUM)); do \
-			$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
+		for i in $$(seq $(COMPILE_NUM) 1); do \
+			if [ $$i -eq 1 ]; then \
+				$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
+			else \
+				$(COMPILER) $(COMPILER_FLAGS) -file-line-error $$TARGET_NAME > $(DEV_NULL); \
+			fi; \
 		done; \
 		cd $(WORKDIR); \
 	done
@@ -159,7 +178,7 @@ else
 		TARGET_DIR=$$(dirname $$file); \
 		TARGET_NAME=$$(basename $$file); \
 		cd $$TARGET_DIR; \
-		$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
+		$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME > $(DEV_NULL); \
 		cd $(WORKDIR); \
 	done
 	-find . -name '*.aux' -exec $(BIBTEX) {} \;
