@@ -530,15 +530,15 @@
                 colback=#2!8!white, colframe=#2!90!white, coltitle=white,
                 fonttitle=\bfseries,
                 adjusted title={#3: ##2},
-                adjusted title after break={#3~\thetcbcounter: ##2 \@thecontinued},
+                adjusted title after break={#3: ##2 \@thecontinued},
                 ##1
             }
             \newtcolorbox{#1**}[1][]{
                 breakable,
                 colback=#2!8!white, colframe=#2!90!white, coltitle=white,
                 fonttitle=\bfseries,
-                adjusted title={},
-                adjusted title after break={},
+                title={},
+                title after break={},
                 ##1
             }
         }
@@ -548,12 +548,14 @@
             \@newboxenv{cdefinition}{darkcyan}{定义}
             \@newboxenv{cexample}{darkmagenta}{例}
             \@newboxenv{cnotice}{darkred}{注意}
+            \@newboxenv{calgorithm}{darkorange}{算法}
         \else
             \@newboxenv{ctheorem}{darkblue}{Theorem}
             \@newboxenv{clemma}{darkgreen}{Definition}
             \@newboxenv{cdefinition}{darkcyan}{Definition}
             \@newboxenv{cexample}{darkmagenta}{Example}
             \@newboxenv{cnotice}{darkred}{Notice}
+            \@newboxenv{calgorithm}{darkorange}{Algorithm}
         \fi
     \fi
 \fi
