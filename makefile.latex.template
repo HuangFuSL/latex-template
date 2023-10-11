@@ -20,21 +20,38 @@ else
 	DEV_NULL := /dev/null
 endif
 
-ifeq ($(DOCKER),1)
+# Detect make version
+MAJOR_VERSION := $(shell $(MAKE) --version | sed -n 's/^GNU Make \([0-9]*\)\..*/\1/p')
+MINOR_VERSION := $(shell $(MAKE) --version | sed -n 's/^GNU Make [0-9]*\.\([0-9]*\).*/\1/p')
+PARALLEL := $(shell expr $(MAJOR_VERSION) \> 3 \& $(MINOR_VERSION) \> 3)
+
+ifeq ($(PARALLEL),1)
 else
-# Only set synctex if not in docker mode
-	XELATEX_FLAGS += -synctex=1
-	PDFLATEX_FLAGS += -synctex=1
-	LUALATEX_FLAGS += -synctex=1
+$(warning WARNING: GNU Make $(MAJOR_VERSION).$(MINOR_VERSION) is detected)
+$(warning Parallel execution is disabled)
+.NOTPARALLEL:
 endif
 
+# Disable parallel execution in docker mode
+ifeq ($(DOCKER),1)
+$(eval TEXINPUTS = /opt/template//:)
+.NOTPARALLEL:
+else
+$(eval TEXINPUTS ?= /opt/template//:)
+endif
+export TEXINPUTS
+
 # If not defined TARGET
-$(eval TARGET ?= $(shell find . -name '*.tex' -and -type f | sed 's/\.tex$$//'))
-# If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
-$(eval TARGET := $(filter-out $(foreach file, $(TARGET), \
-	$(shell grep -l '%\W*!\W*TEX\W*root\W*=\W*' $(file).tex | sed 's/\.tex$$//') \
-), $(TARGET)))
+PATH_POSTFIX = | sed 's/\.tex$$//' | sed 's/^\.\///'
 WORKDIR := $(shell pwd)
+$(eval TARGET ?= $(shell find . -name '*.tex' -and -type f))
+$(eval TARGET = $(foreach file, $(TARGET), $(shell echo $(file) $(PATH_POSTFIX))))
+# If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
+$(eval TARGET = $(filter-out $(foreach file, $(TARGET), $(shell \
+	grep -l '%\W*!\W*TEX\W*root\W*=\W*' $(file).tex $(PATH_POSTFIX) \
+)), $(TARGET)))
+
+.DEFAULT: help
 
 help:
 ifeq ($(WINNT),1)
@@ -99,14 +116,11 @@ $(eval DOCKER_TAG ?= latest)
 # Constants
 AUXILIARY_FILES = *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata *.xdv *.mx1
 
-ifeq ($(DOCKER),1)
-$(eval TEXINPUTS = /opt/template//:)
-else
-$(eval TEXINPUTS ?= /opt/template//:)
-endif
-export TEXINPUTS
+# Processing stage
 
-_PRE_COMPILE:
+.WAIT:
+
+_PRE_COMPILE_GLOBAL:
 ifeq ($(DOCKER),1)
 	find . -name '*.synctex.gz' -delete
 	$(eval CONTAINER_ID := $(shell \
@@ -119,105 +133,106 @@ ifeq ($(DOCKER),1)
 		docker --context $(DOCKER_CONTEXT) cp $$file $(CONTAINER_ID):/data; \
 	done
 	docker --context $(DOCKER_CONTEXT) exec -i $(CONTAINER_ID) \
-		make -f /opt/template/makefile.latex.template _PRE_COMPILE \
-			DOCKER=2 TARGET="$(TARGET)" SVG=$(SVG) MAKEFLAGS="$(OLD_MAKEFLAGS)"
+		make -f /opt/template/makefile.latex.template _PRE_COMPILE_GLOBAL \
+			DOCKER=2 TARGET="$(TARGET)" MAKEFLAGS="$(MAKEFLAGS)"
 else
-	-for file in $(TARGET); do \
-		TARGET_DIR=$$(dirname $$file); \
-		TITLE=$$(sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $$file.tex); \
-		AUTHOR=$$(sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $$file.tex); \
-		touch $$TARGET_DIR/$$file.xmpdata; \
-		echo "\Title{$$TITLE}" >> $$file.xmpdata; \
-		echo "\Author{$$AUTHOR}" >> $$file.xmpdata; \
-	done
-
 	for file in $(EXTERNAL_FILES); do \
 		TARGET_NAME=$$(basename $$file); \
 		ln -sf $$file $$TARGET_NAME; \
 	done
 endif
 
-_COMPILE:
-ifeq ($(DOCKER),1)
-	docker --context $(DOCKER_CONTEXT) \
-		exec -i $(CONTAINER_ID) \
-		make -f /opt/template/makefile.latex.template _COMPILE \
-			DOCKER=2 TARGET="$(TARGET)" COMPILE_NUM="$(COMPILE_NUM)" \
-			COMPILER="$(COMPILER)" COMPILER_FLAGS="$(COMPILER_FLAGS)" \
-			MAKEFLAGS="$(OLD_MAKEFLAGS)"
-else
-	-if [ $(DOCKER) -eq 2 ]; then \
-		find . -type f -and -name '*.pdf' -delete; \
-	fi
-
-	-for file in $(TARGET); do \
-		TARGET_DIR=$$(dirname $$file); \
-		TARGET_NAME=$$(basename $$file); \
-		cd $$TARGET_DIR; \
-		for i in $$(seq $(COMPILE_NUM) 1); do \
-			if [ $$i -eq 1 ]; then \
-				$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME; \
-			else \
-				$(COMPILER) $(COMPILER_FLAGS) -file-line-error $$TARGET_NAME > $(DEV_NULL); \
-			fi; \
-		done; \
-		cd $(WORKDIR); \
-	done
+define COMPILE_TASK
+_PRE_COMPILE_$1: _PRE_COMPILE_GLOBAL
+ifneq ($(DOCKER),1)
+	TITLE=$$$$(sed -n 's/^[[:space:]]*\\title{\(.*\)}/\1/p' $1.tex); \
+	AUTHOR=$$$$(sed -n 's/^[[:space:]]*\\author{\(.*\)}/\1/p' $1.tex); \
+	touch $1.xmpdata; \
+	echo "\Title{$$$$TITLE}" >> $1.xmpdata; \
+	echo "\Author{$$$$AUTHOR}" >> $1.xmpdata
 endif
 
-_COMPILE_BIB:
-ifeq ($(DOCKER),1)
-	docker --context $(DOCKER_CONTEXT) \
-		exec -i $(CONTAINER_ID) \
-		make -f /opt/template/makefile.latex.template _COMPILE_BIB \
-			DOCKER=2 COMPILER="$(COMPILER)" BIBTEX="$(BIBTEX)" \
-			COMPILER_FLAGS="$(COMPILER_FLAGS)" TARGET="$(TARGET)" \
-			MAKEFLAGS="$(OLD_MAKEFLAGS)"
-else
-	-for file in $(TARGET); do \
-		TARGET_DIR=$$(dirname $$file); \
-		TARGET_NAME=$$(basename $$file); \
-		cd $$TARGET_DIR; \
-		$(COMPILER) $(COMPILER_FLAGS) $$TARGET_NAME > $(DEV_NULL); \
-		cd $(WORKDIR); \
-	done
-	-find . -name '*.aux' -exec $(BIBTEX) {} \;
+_COMPILE_$1:
+ifneq ($(DOCKER),1)
+	TARGET_DIR=$$$$(dirname $1); \
+	TARGET_NAME=$$$$(basename $1); \
+	cd $$$$TARGET_DIR; \
+	for i in $$$$(seq $$(COMPILE_NUM) -1 1); do \
+		if [ $$$$i -eq 1 ]; then \
+			$$(COMPILER) $$(COMPILER_FLAGS) -synctex=1 -file-line-error $$$$TARGET_NAME; \
+		else \
+			$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
+		fi; \
+	done; \
+	cd $$(WORKDIR);
 endif
 
-_COMPILE_ALL: | _COMPILE_BIB _COMPILE
-
-_SVG:
-ifeq ($(DOCKER),1)
-	docker --context $(DOCKER_CONTEXT) \
-		exec -i $(CONTAINER_ID) \
-		make -f /opt/template/makefile.latex.template _SVG \
-			DOCKER=2 TARGET="$(TARGET)" MAKEFLAGS="$(OLD_MAKEFLAGS)"
-else
-	if [ $(DOCKER) -eq 2 ]; then \
-		find . -type f -and -name '*.svg' -delete; \
-	fi
-	for file in $(TARGET); do \
-		TARGET_DIR=$$(dirname $$file); \
-		TARGET_NAME=$$(basename $$file); \
-		cd $$TARGET_DIR; \
-		$(DVISVGM) $$TARGET_NAME.xdv $(DVISVGM_FLAGS); \
-		cd $(WORKDIR); \
-	done
+_COMPILE_BIB_$1:
+ifneq ($(DOCKER),1)
+	TARGET_DIR=$$$$(dirname $1); \
+	TARGET_NAME=$$$$(basename $1); \
+	cd $$$$TARGET_DIR; \
+	$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
+	find . -name '$$$$TARGET_NAME.aux' -exec $$(BIBTEX) {} \;
+	find . -name 'bu*.aux' -exec $$(BIBTEX) {} \;
 endif
+
+
+_SVG_$1:
+ifneq ($(DOCKER),1)
+	TARGET_DIR=$$$$(dirname $1); \
+	TARGET_NAME=$$$$(basename $1); \
+	cd $$$$TARGET_DIR; \
+	$$(DVISVGM) $$$$TARGET_NAME.xdv $$(DVISVGM_FLAGS); \
+	cd $$(WORKDIR);
+endif
+
+_WORKFLOW_$1: | _PRE_COMPILE_$1 _COMPILE_$1
+_WORKFLOW_ALL_$1: | _PRE_COMPILE_$1 _COMPILE_BIB_$1 _COMPILE_$1
+_WORKFLOW_SVG_$1: | _PRE_COMPILE_$1 _COMPILE_$1 _SVG_$1
+_WORKFLOW_SVG_ALL_$1: | _PRE_COMPILE_$1 _COMPILE_BIB_$1 _COMPILE_$1 _SVG_$1
+
+endef
+
+_COMPILE_TASKS :=
+_COMPILE_ALL_TASKS :=
+_COMPILE_SVG_TASKS :=
+_COMPILE_SVG_ALL_TASKS :=
+
+$(foreach file, $(TARGET), $(eval \
+	$(call COMPILE_TASK,$(file)) \
+	$(eval _COMPILE_TASKS += _WORKFLOW_$(file)) \
+	$(eval _COMPILE_ALL_TASKS += _WORKFLOW_ALL_$(file)) \
+	$(eval _COMPILE_SVG_TASKS += _WORKFLOW_SVG_$(file)) \
+	$(eval _COMPILE_SVG_ALL_TASKS += _WORKFLOW_SVG_ALL_$(file)) \
+))
+
+define _DOCKER_CMD
+$1: $$($1_TASKS)
+ifeq ($$(DOCKER),1)
+	docker --context $(DOCKER_CONTEXT) \
+		exec -i $$(CONTAINER_ID) make -f /opt/template/makefile.latex.template $1 \
+		DOCKER=2 TARGET="$$(TARGET)" COMPILE_NUM="$$(COMPILE_NUM)" \
+		COMPILER="$$(COMPILER)" COMPILER_FLAGS="$$(COMPILER_FLAGS)" \
+		MAKEFLAGS="$$(MAKEFLAGS)"
+endif
+endef
+
+_ENTRIES = _COMPILE _COMPILE_ALL _COMPILE_SVG _COMPILE_SVG_ALL
+$(foreach entry, $(_ENTRIES), $(eval $(call _DOCKER_CMD,$(entry))))
 
 _POST_COMPILE:
 ifeq ($(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) \
 		exec -i $(CONTAINER_ID) \
 		make -f /opt/template/makefile.latex.template _POST_COMPILE \
-			DOCKER=2 MAKEFLAGS="$(OLD_MAKEFLAGS)"
+			DOCKER=2
 	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/. .
-	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID)
+	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID) --time 0
 else
 	-for file in $(AUXILIARY_FILES); do \
 		find . -name "$$file" -delete; \
 	done
-	find . -name '*.tex'
 	-if [ $(DOCKER) -eq 2 ]; then \
 		find . -type f -and -not -name '*.pdf' -and -not -name '*.svg' -delete; \
 	fi
@@ -229,25 +244,23 @@ endif
 
 _XELATEX:
 	$(eval COMPILER = $(XELATEX))
-	$(eval COMPILER_FLAGS = $(XELATEX_FLAGS))
+	$(eval COMPILER_FLAGS += $(XELATEX_FLAGS))
 
 _PDFLATEX:
 	$(eval COMPILER = $(PDFLATEX))
-	$(eval COMPILER_FLAGS = $(PDFLATEX_FLAGS))
+	$(eval COMPILER_FLAGS += $(PDFLATEX_FLAGS))
 
 _LUALATEX:
 	$(eval COMPILER = $(LUALATEX))
-	$(eval COMPILER_FLAGS = $(LUALATEX_FLAGS))
+	$(eval COMPILER_FLAGS += $(LUALATEX_FLAGS))
 
-_DVISVGM:
-	$(eval COMPILER = $(XELATEX))
-	$(eval COMPILER_FLAGS = $(XELATEX_FLAGS))
+_DVISVGM: | _XELATEX
 	$(eval COMPILER_FLAGS += -output-driver='xdvipdfmx -E -i dvipdfmx-unsafe.cfg' -no-pdf)
 
-default: | _PRE_COMPILE _COMPILE _POST_COMPILE
-all: | _PRE_COMPILE _COMPILE_ALL _POST_COMPILE
-svg: | _DVISVGM _PRE_COMPILE _COMPILE _SVG _POST_COMPILE
-svg-all: | _DVISVGM _PRE_COMPILE _COMPILE_ALL _SVG _POST_COMPILE
+default: | _COMPILE .WAIT _POST_COMPILE
+all: | _COMPILE_ALL .WAIT _POST_COMPILE
+svg: | _DVISVGM _COMPILE_SVG .WAIT _POST_COMPILE
+svg-all: | _DVISVGM _COMPILE_SVG_ALL .WAIT _POST_COMPILE
 xe-default: | _XELATEX default
 xe-all: | _XELATEX all
 pdf-default: | _PDFLATEX default
