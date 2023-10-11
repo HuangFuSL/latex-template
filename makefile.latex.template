@@ -1,13 +1,26 @@
-$(eval XELATEX ?= xelatex)
-$(eval XELATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
-$(eval PDFLATEX ?= pdflatex)
-$(eval PDFLATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
-$(eval LUALATEX ?= lualatex)
-$(eval LUALATEX_FLAGS ?= -shell-escape -interaction=nonstopmode)
-$(eval DVISVGM ?= dvisvgm)
-$(eval DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg)
-$(eval TEXINPUTS ?= /opt/template//:)
-$(eval EXTERNAL_FILES ?=)
+XELATEX ?= xelatex
+XELATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
+PDFLATEX ?= pdflatex
+PDFLATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
+LUALATEX ?= lualatex
+LUALATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
+DVISVGM ?= dvisvgm
+DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg
+TEXINPUTS ?= /opt/template//:
+EXTERNAL_FILES ?=
+
+COMPILE_NUM ?= 2
+COMPILER ?= $(XELATEX)
+COMPILER_FLAGS ?= $(XELATEX_FLAGS)
+BIBTEX ?= bibtex
+
+# Use with caution
+DOCKER ?= 0
+DOCKER_CONTEXT ?= default
+DOCKER_TAG ?= latest
+
+AUXILIARY_FILES += *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi
+AUXILIARY_FILES += *.xmpi *.upa *.lua *.timestamp *.xmpdata *.xdv *.mx1
 
 # DO NOT EDIT BELOW THIS LINE
 
@@ -34,17 +47,17 @@ endif
 
 # Disable parallel execution in docker mode
 ifeq ($(DOCKER),1)
-$(eval TEXINPUTS = /opt/template//:)
+TEXINPUTS = /opt/template//:
 .NOTPARALLEL:
 else
-$(eval TEXINPUTS ?= /opt/template//:)
+TEXINPUTS ?= /opt/template//:
 endif
 export TEXINPUTS
 
 # If not defined TARGET
 PATH_POSTFIX = | sed 's/\.tex$$//' | sed 's/^\.\///'
 WORKDIR := $(shell pwd)
-$(eval TARGET ?= $(shell find . -name '*.tex' -and -type f))
+TARGET ?= $(shell find . -name '*.tex' -and -type f))
 $(eval TARGET = $(foreach file, $(TARGET), $(shell echo $(file) $(PATH_POSTFIX))))
 # If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
 $(eval TARGET = $(filter-out $(foreach file, $(TARGET), $(shell \
@@ -102,19 +115,6 @@ _HELP:
 	@$(foreach file, $(TARGET), echo "  $(file).tex";)
 	@echo "External files:"
 	@$(foreach file, $(EXTERNAL_FILES), echo "  $(file) -> ./$(shell basename $(file))";)
-
-$(eval COMPILE_NUM ?= 2)
-$(eval COMPILER ?= $(XELATEX))
-$(eval COMPILER_FLAGS ?= $(XELATEX_FLAGS))
-$(eval BIBTEX ?= bibtex)
-
-# Use with caution
-$(eval DOCKER ?= 0)
-$(eval DOCKER_CONTEXT ?= default)
-$(eval DOCKER_TAG ?= latest)
-
-# Constants
-AUXILIARY_FILES = *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi *.xmpi *.upa *.lua *.timestamp *.xmpdata *.xdv *.mx1
 
 # Processing stage
 
@@ -207,14 +207,16 @@ $(foreach file, $(TARGET), $(eval \
 	$(eval _COMPILE_SVG_ALL_TASKS += _WORKFLOW_SVG_ALL_$(file)) \
 ))
 
+_PASSDOWN_ARGS = TARGET COMPILE_NUM COMPILER BIBTEX DVISVGM \
+_PASSDOWN_ARGS += DVISVGM_FLAGS MAKEFLAGS COMPILER_FLAGS
+$(foreach arg, $(_PASSDOWN_ARGS), $(eval _PASSDOWN_SUFFIX += $(arg)="$$($(arg))"))
+
 define _DOCKER_CMD
 $1: $$($1_TASKS)
 ifeq ($$(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) \
 		exec -i $$(CONTAINER_ID) make -f /opt/template/makefile.latex.template $1 \
-		DOCKER=2 TARGET="$$(TARGET)" COMPILE_NUM="$$(COMPILE_NUM)" \
-		COMPILER="$$(COMPILER)" COMPILER_FLAGS="$$(COMPILER_FLAGS)" \
-		MAKEFLAGS="$$(MAKEFLAGS)"
+		DOCKER=2 $(_PASSDOWN_SUFFIX)
 endif
 endef
 
