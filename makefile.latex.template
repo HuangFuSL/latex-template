@@ -1,7 +1,5 @@
 XELATEX ?= xelatex
 XELATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
-PDFLATEX ?= pdflatex
-PDFLATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
 LUALATEX ?= lualatex
 LUALATEX_FLAGS ?= -shell-escape -interaction=nonstopmode
 DVISVGM ?= dvisvgm
@@ -248,10 +246,6 @@ _XELATEX:
 	$(eval COMPILER = $(XELATEX))
 	$(eval COMPILER_FLAGS += $(XELATEX_FLAGS))
 
-_PDFLATEX:
-	$(eval COMPILER = $(PDFLATEX))
-	$(eval COMPILER_FLAGS += $(PDFLATEX_FLAGS))
-
 _LUALATEX:
 	$(eval COMPILER = $(LUALATEX))
 	$(eval COMPILER_FLAGS += $(LUALATEX_FLAGS))
@@ -265,8 +259,6 @@ svg: | _DVISVGM _COMPILE_SVG .WAIT _POST_COMPILE
 svg-all: | _DVISVGM _COMPILE_SVG_ALL .WAIT _POST_COMPILE
 xe-default: | _XELATEX default
 xe-all: | _XELATEX all
-pdf-default: | _PDFLATEX default
-pdf-all: | _PDFLATEX all
 lua-default: | _LUALATEX default
 lua-all: | _LUALATEX all
 clean: | _POST_COMPILE
