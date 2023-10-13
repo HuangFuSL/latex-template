@@ -55,7 +55,7 @@ export TEXINPUTS
 # If not defined TARGET
 PATH_POSTFIX = | sed 's/\.tex$$//' | sed 's/^\.\///'
 WORKDIR := $(shell pwd)
-TARGET ?= $(shell find . -name '*.tex' -and -type f))
+TARGET ?= $(shell find . -name '*.tex' -and -type f)
 $(eval TARGET = $(foreach file, $(TARGET), $(shell echo $(file) $(PATH_POSTFIX))))
 # If the file contains `% !TEX root = ` (may or may not contain whitespaces), ignore it
 $(eval TARGET = $(filter-out $(foreach file, $(TARGET), $(shell \
