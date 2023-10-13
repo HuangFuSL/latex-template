@@ -102,7 +102,6 @@
 
     % Hyperlinks and references
     \RequirePackage{hyperref}
-    \RequirePackage[sort&compress]{gbt7714}
 
     % Colors
     \RequirePackage{xcolor} % Color
@@ -558,4 +557,7 @@
             \@newboxenv{calgorithm}{darkorange}{Algorithm}
         \fi
     \fi
+
+    % Feat: add biblatex package
+    \RequirePackage[backend=bibtex, style=ieee, natbib=true, isbn=false,url=false,eprint=false]{biblatex}
 \fi
