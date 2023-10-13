@@ -19,6 +19,7 @@ DOCKER_TAG ?= latest
 
 AUXILIARY_FILES += *.aux *.log *.nav *.out *.snm *.toc *.vrb *.bbl *.blg *.dvi
 AUXILIARY_FILES += *.xmpi *.upa *.lua *.timestamp *.xmpdata *.xdv *.mx1
+AUXILIARY_FILES += *-blx.bib *.xml
 
 # DO NOT EDIT BELOW THIS LINE
 
@@ -75,13 +76,8 @@ _HELP:
 	@echo "Usage: make [target] [variable=value]"
 	@echo "Targets:"
 	@echo "  [xe-]default: compile with xelatex"
-	@echo "  [xe-]all: compile with xelatex and bibtex"
 	@echo "  svg: compile with xelatex and dvisvgm"
-	@echo "  svg-all: compile with xelatex, bibtex and dvisvgm"
-	@echo "  pdf-default: compile with pdflatex"
-	@echo "  pdf-all: compile with pdflatex and bibtex"
 	@echo "  lua-default: compile with lualatex"
-	@echo "  lua-all: compile with lualatex and bibtex"
 	@echo "  clean: clean all temporary files"
 	@echo "  [help]: show this help message"
 	@echo "Variables:"
@@ -157,6 +153,16 @@ ifneq ($(DOCKER),1)
 	cd $$$$TARGET_DIR; \
 	for i in $$$$(seq $$(COMPILE_NUM) -1 1); do \
 		if [ $$$$i -eq 1 ]; then \
+			BIBTEXED=0; \
+			for file in $$$$TARGET_NAME*.aux; do \
+				if grep -qE "\\\citation\{[0-9a-zA-Z]+\}" "$$$$file"; then \
+					$$(BIBTEX) "$$$$file"; \
+					BIBTEXED=1; \
+				fi; \
+			done; \
+			if [ $$$$BIBTEXED -eq 1 ]; then \
+				$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
+			fi; \
 			$$(COMPILER) $$(COMPILER_FLAGS) -synctex=1 -file-line-error $$$$TARGET_NAME; \
 		else \
 			$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
@@ -164,17 +170,6 @@ ifneq ($(DOCKER),1)
 	done; \
 	cd $$(WORKDIR);
 endif
-
-_COMPILE_BIB_$1:
-ifneq ($(DOCKER),1)
-	TARGET_DIR=$$$$(dirname $1); \
-	TARGET_NAME=$$$$(basename $1); \
-	cd $$$$TARGET_DIR; \
-	$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
-	find . -name '$$$$TARGET_NAME.aux' -exec $$(BIBTEX) {} \;
-	find . -name 'bu*.aux' -exec $$(BIBTEX) {} \;
-endif
-
 
 _SVG_$1:
 ifneq ($(DOCKER),1)
@@ -186,23 +181,17 @@ ifneq ($(DOCKER),1)
 endif
 
 _WORKFLOW_$1: | _PRE_COMPILE_$1 _COMPILE_$1
-_WORKFLOW_ALL_$1: | _PRE_COMPILE_$1 _COMPILE_BIB_$1 _COMPILE_$1
 _WORKFLOW_SVG_$1: | _PRE_COMPILE_$1 _COMPILE_$1 _SVG_$1
-_WORKFLOW_SVG_ALL_$1: | _PRE_COMPILE_$1 _COMPILE_BIB_$1 _COMPILE_$1 _SVG_$1
 
 endef
 
 _COMPILE_TASKS :=
-_COMPILE_ALL_TASKS :=
 _COMPILE_SVG_TASKS :=
-_COMPILE_SVG_ALL_TASKS :=
 
 $(foreach file, $(TARGET), $(eval \
 	$(call COMPILE_TASK,$(file)) \
 	$(eval _COMPILE_TASKS += _WORKFLOW_$(file)) \
-	$(eval _COMPILE_ALL_TASKS += _WORKFLOW_ALL_$(file)) \
 	$(eval _COMPILE_SVG_TASKS += _WORKFLOW_SVG_$(file)) \
-	$(eval _COMPILE_SVG_ALL_TASKS += _WORKFLOW_SVG_ALL_$(file)) \
 ))
 
 _PASSDOWN_ARGS = TARGET COMPILE_NUM COMPILER BIBTEX DVISVGM \
@@ -214,11 +203,11 @@ $1: $$($1_TASKS)
 ifeq ($$(DOCKER),1)
 	docker --context $(DOCKER_CONTEXT) \
 		exec -i $$(CONTAINER_ID) make -f /opt/template/makefile.latex.template $1 \
-		DOCKER=2 $(_PASSDOWN_SUFFIX)
+		DOCKER=2 $$(_PASSDOWN_SUFFIX)
 endif
 endef
 
-_ENTRIES = _COMPILE _COMPILE_ALL _COMPILE_SVG _COMPILE_SVG_ALL
+_ENTRIES = _COMPILE _COMPILE_SVG
 $(foreach entry, $(_ENTRIES), $(eval $(call _DOCKER_CMD,$(entry))))
 
 _POST_COMPILE:
@@ -254,9 +243,7 @@ _DVISVGM: | _XELATEX
 	$(eval COMPILER_FLAGS += -output-driver='xdvipdfmx -E -i dvipdfmx-unsafe.cfg' -no-pdf)
 
 default: | _COMPILE .WAIT _POST_COMPILE
-all: | _COMPILE_ALL .WAIT _POST_COMPILE
 svg: | _DVISVGM _COMPILE_SVG .WAIT _POST_COMPILE
-svg-all: | _DVISVGM _COMPILE_SVG_ALL .WAIT _POST_COMPILE
 xe-default: | _XELATEX default
 xe-all: | _XELATEX all
 lua-default: | _LUALATEX default
