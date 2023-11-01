@@ -6,6 +6,7 @@ DVISVGM ?= dvisvgm
 DVISVGM_FLAGS ?= --no-fonts -p1- -O --output=%f-%1p.svg
 TEXINPUTS ?= /opt/template//:
 EXTERNAL_FILES ?=
+SILENT ?= 0
 
 COMPILE_NUM ?= 2
 COMPILER ?= $(XELATEX)
@@ -165,7 +166,11 @@ ifneq ($(DOCKER),1)
 			if [ $$$$BIBTEXED -eq 1 ]; then \
 				$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
 			fi; \
-			$$(COMPILER) $$(COMPILER_FLAGS) -synctex=1 -file-line-error $$$$TARGET_NAME; \
+			if [ $$(SILENT) -eq 0 ]; then \
+				$$(COMPILER) $$(COMPILER_FLAGS) -synctex=1 -file-line-error $$$$TARGET_NAME; \
+			else \
+				$$(COMPILER) $$(COMPILER_FLAGS) -synctex=1 $$$$TARGET_NAME > $$(DEV_NULL); \
+			fi; \
 		else \
 			$$(COMPILER) $$(COMPILER_FLAGS) $$$$TARGET_NAME > $$(DEV_NULL); \
 		fi; \
