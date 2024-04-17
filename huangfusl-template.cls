@@ -559,5 +559,5 @@
     \fi
 
     % Feat: add biblatex package
-    \RequirePackage[backend=bibtex, style=ieee, natbib=true, isbn=false,url=false,eprint=false]{biblatex}
+    \RequirePackage[backend=bibtex, style=ieee, natbib=true, giveninits=true, isbn=false, url=false, eprint=false, doi=false]{biblatex}
 \fi
