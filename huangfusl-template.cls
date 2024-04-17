@@ -566,4 +566,7 @@
 
     % Feat: add import package
     \RequirePackage{import}
+
+    % Feat: add lstlisting package to support code listing
+    \RequirePackage{listings}
 \fi
