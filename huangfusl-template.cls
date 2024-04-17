@@ -563,4 +563,7 @@
 
     % Feat: set font for ``\caption'' command
     \usepackage[font=small,labelfont=bf]{caption}
+
+    % Feat: add import package
+    \RequirePackage{import}
 \fi
