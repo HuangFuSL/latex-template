@@ -19,6 +19,19 @@ Four modes are provided within the template, specify using document class argume
 * `\ssection`, `\ssubsection` and `\ssubsubsection` to hide section numbering while keeps table of contents entry.
 * Produce PDF-A documents.
 * `\remember` and `\recall` to repeat equations.
+* `ctheorem`, `clemma`, `cdefinition`, `cexample`, `cnotice`, `calgorithm` environments provided by `tcolorbox`.
+    * Asterisk version to disable numbering.
+    * Double asterisk version to disable numbering and hide title.
+
+Packages automatically loaded:
+
+* `listings`: Code listing
+* `biblatex`: Bibliography
+* `tcolorbox`: Colored boxes
+* `calligra`: Calligraphy fonts
+* `pgf`: Plotting
+* `booktabs`: Better tables
+* `algorithm2e`: Algorithms
 
 ### Article mode
 

@@ -51,6 +51,7 @@
     \@RegisterVersion<Zero><0.0>\versionZerotrue % Dummy version
     \@RegisterVersion<A><1.0> % Version 1.0.x
     \@RegisterVersion<B><2.0> % Version 2.0.x
+    \@RegisterVersion<Ca><3.1> % Version 3.1.0
 
     \ProcessOptions\relax
 
@@ -67,6 +68,7 @@
     % List versions switches here
     \ifenableA\enableZerotrue\fi % Enable the preceding version
     \ifenableB\enableAtrue\fi
+    \ifenableCa\enableBtrue\fi
 
     % Usage
     % Use \ifenableX if the feature is to be included in the future
@@ -569,4 +571,9 @@
 
     % Feat: add lstlisting package to support code listing
     \RequirePackage{listings}
+\fi
+
+% Version 3.1
+\ifenableCa
+
 \fi
