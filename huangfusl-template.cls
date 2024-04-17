@@ -560,4 +560,7 @@
 
     % Feat: add biblatex package
     \RequirePackage[backend=bibtex, style=ieee, natbib=true, giveninits=true, isbn=false, url=false, eprint=false, doi=false]{biblatex}
+
+    % Feat: set font for ``\caption'' command
+    \usepackage[font=small,labelfont=bf]{caption}
 \fi
