@@ -122,7 +122,7 @@
     \RequirePackage{amssymb}
 
     % Floating objects (figures, tables, etc.)
-    \RequirePackage{algorithm2e}
+    \RequirePackage[ruled]{algorithm2e}
     \RequirePackage{booktabs}
     \RequirePackage{subfigure}
 
