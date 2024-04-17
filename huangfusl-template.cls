@@ -124,7 +124,7 @@
     % Floating objects (figures, tables, etc.)
     \RequirePackage[ruled]{algorithm2e}
     \RequirePackage{booktabs}
-    \RequirePackage{subfigure}
+    \RequirePackage[tight]{subfigure}
 
     % Tikz
     \RequirePackage{tikz}
