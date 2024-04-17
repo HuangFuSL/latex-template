@@ -92,7 +92,7 @@
         \ifarticle\LoadClass[a4paper, 12pt]{article}\loadedtrue\fi
         \ifbeamer\LoadClass[aspectratio=169]{beamer}\loadedtrue\fi
         \ifbook\LoadClass[a4paper, 12pt]{book}\loadedtrue\fi
-        \ifstandalone\LoadClass[varwidth, dvisvgm]{standalone}\loadedtrue\fi
+        \ifstandalone\LoadClass[varwidth, multi, dvisvgm]{standalone}\loadedtrue\fi
 
         % if no more versions can be loaded
         \ifloaded\else\ifversionA\@UnknownClassError\fi\fi
