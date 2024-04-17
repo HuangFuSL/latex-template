@@ -158,7 +158,7 @@ ifneq ($(DOCKER),1)
 		if [ $$$$i -eq 1 ]; then \
 			BIBTEXED=0; \
 			for file in $$$$TARGET_NAME*.aux; do \
-				if grep -qE "\\\citation\{[0-9a-zA-Z]+\}" "$$$$file"; then \
+				if grep -qE "\\\citation\{.+\}" "$$$$file"; then \
 					$$(BIBTEX) "$$$$file"; \
 					BIBTEXED=1; \
 				fi; \
