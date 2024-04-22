@@ -225,12 +225,17 @@ ifeq ($(DOCKER),1)
 			DOCKER=2
 	docker --context $(DOCKER_CONTEXT) cp $(CONTAINER_ID):/data/. .
 	docker --context $(DOCKER_CONTEXT) stop $(CONTAINER_ID) --time 0
+
+# Process synctex.gz file, replace the path with the cwd
+	find . -name '*.synctex.gz' -exec gzip -fd {} \;
+	find . -type f -name "*.synctex" -exec sed -i '' "s|/data/|$$(pwd)/|g" {} \;
+	find . -name '*.synctex' -exec gzip {} \;
 else
 	-for file in $(AUXILIARY_FILES); do \
 		find . -name "$$file" -delete; \
 	done
 	-if [ $(DOCKER) -eq 2 ]; then \
-		find . -type f -and -not -name '*.pdf' -and -not -name '*.svg' -delete; \
+		find . -type f -and -not -name '*.pdf' -and -not -name '*.svg' -and -not -name '*.synctex.gz' -delete; \
 	fi
 	-for file in $(EXTERNAL_FILES); do \
 		TARGET_NAME=$$(basename $$file); \
