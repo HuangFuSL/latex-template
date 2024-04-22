@@ -62,13 +62,13 @@
             Version not specified.
             Latest feature may change in the future.
         }
-        \versionAtrue\enableAtrue % Set to the latest version here
+        \versionCatrue\enableCatrue % Set to the latest version here
     \fi
 
     % List versions switches here
-    \ifenableA\enableZerotrue\fi % Enable the preceding version
-    \ifenableB\enableAtrue\fi
     \ifenableCa\enableBtrue\fi
+    \ifenableB\enableAtrue\fi
+    \ifenableA\enableZerotrue\fi % Enable the preceding version
 
     % Usage
     % Use \ifenableX if the feature is to be included in the future
