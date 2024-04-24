@@ -25,6 +25,9 @@ AUXILIARY_FILES += *-blx.bib *.xml
 
 # DO NOT EDIT BELOW THIS LINE
 
+# Detect current makefile template path
+THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+
 # Detect OS to set `/dev/null` path
 ifeq ($(OS),Windows_NT)
 	WINNT := 1
@@ -126,6 +129,7 @@ ifeq ($(DOCKER),1)
 		sleep $(DOCKER_TIMEOUT) \
 	))
 	docker --context $(DOCKER_CONTEXT) cp . $(CONTAINER_ID):/data
+	docker --context $(DOCKER_CONTEXT) cp -L $(THIS_MAKEFILE) $(CONTAINER_ID):/opt/template/makefile.latex.template
 	for file in $(EXTERNAL_FILES); do \
 		docker --context $(DOCKER_CONTEXT) cp $$file $(CONTAINER_ID):/data; \
 	done
